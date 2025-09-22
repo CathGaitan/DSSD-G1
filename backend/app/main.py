@@ -1,7 +1,9 @@
 from fastapi import FastAPI
-from api.endpoints.projects import router as projects_router
-from api.router import router
+from app.core.database import Base, engine
+from app.api.router import api_router
 
-app = FastAPI(title="App para DSSD")
+Base.metadata.create_all(bind=engine)
 
-app.include_router(projects_router, prefix="/proyecto", tags=["Projects"])
+app = FastAPI(title="Projects API")
+
+app.include_router(api_router)

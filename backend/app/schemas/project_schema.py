@@ -1,19 +1,17 @@
-from pydantic import BaseModel, validator
-from typing import Optional, List
-from datetime import datetime
+from pydantic import BaseModel
 
 
-class BaseSchema(BaseModel):
+class ProjectBase(BaseModel):
+    name: str
+    description: str | None = None
+
+
+class ProjectCreate(ProjectBase):
+    pass
+
+
+class ProjectResponse(ProjectBase):
+    id: int
+
     class Config:
         orm_mode = True
-        allow_population_by_field_name = True
-
-
-class ProjectCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-
-    @validator('name')
-    def validate_name(cls, name):
-        if not name or len(name.strip()) < 2:
-            raise ValueError('El nombre del proyecto debe tener al menos 2 caracteres.')

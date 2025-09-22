@@ -5,24 +5,24 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/app:/app
+      - ./backend:/app
     depends_on:
       - db
     environment:
       - DATABASE_URL=${DATABASE_URL}
 
-  frontend:
-    build: ./frontend
-    container_name: react_frontend
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    stdin_open: true
-    tty: true
-    depends_on:
-      - backend
+  # frontend:
+  #   build: ./frontend
+  #   container_name: react_frontend
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - ./frontend:/app
+  #     - /app/node_modules
+  #   stdin_open: true
+  #   tty: true
+  #   depends_on:
+  #     - backend
 
   db:
     image: postgres:15
