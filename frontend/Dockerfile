@@ -2,17 +2,17 @@ FROM node:20
 
 WORKDIR /app
 
-# Copiar archivos de dependencias
+# Copiar solo package.json y package-lock.json
 COPY package*.json ./
 
 # Instalar dependencias
 RUN npm install
 
-# Copiar el resto del código (esto se sobreescribe con el volumen)
+# Copiar resto del código
 COPY . .
 
-# Exponer el puerto
-EXPOSE 3000
+# Exponer puerto de Vite
+EXPOSE 5173
 
 # Comando por defecto
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev", "--", "--host"]
