@@ -16,7 +16,15 @@ class ProjectService:
         try:
             project_dict = project_data.model_dump(exclude={"tasks"})
             project = self.project_repo.create(project_dict)
-            tasks_data = [{**task.model_dump(), "project_id": project.id} for task in project_data.tasks]
+            tasks_data = []
+            for task in project_data.tasks:
+                task_dict = task.model_dump()
+                task_dict["project_id"] = project.id
+                if task.resolves_by_itself:
+                    task_dict["ong_that_solves"] = project.id
+                else:
+                    task_dict["ong_that_solves"] = None
+                tasks_data.append(task_dict)
             self.task_repo.create_multiple_tasks(tasks_data)
             return project
         except Exception as e:
