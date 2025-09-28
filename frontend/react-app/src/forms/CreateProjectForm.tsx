@@ -47,7 +47,7 @@ const CreateProjectForm: React.FC = () => {
           </label>
           <input
             type="text"
-            name="title"
+            name="name"
             placeholder="Ej: Programa de Educación Rural 2024"
             value={formData.name}
             onChange={handleChange}
