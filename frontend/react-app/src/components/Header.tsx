@@ -1,14 +1,16 @@
 import React from "react";
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 const Header: React.FC = () => {
+  const location = useLocation();
+
   return (
-    <header className="bg-blue-600 text-white px-6 py-3 flex items-center justify-between fixed top-0 left-0 w-full shadow-md z-50">
+    <header className="bg-violet-600 text-white px-6 py-3 flex items-center justify-between fixed top-0 left-0 w-full shadow-md z-50">
       {/* Logo / Nombre */}
       <h2 className="text-lg font-semibold">Project Planning</h2>
 
-      {/* Menú centrado */}
-      <nav className="flex-1 flex justify-center space-x-6">
+      {/* Menú a la derecha */}
+      <nav className="flex-1 flex justify-end space-x-6">
         <Link to="/login">
           <button className="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-200">
             Login
@@ -24,6 +26,14 @@ const Header: React.FC = () => {
             Ver Proyectos
           </button>
         </Link>
+        {/* Si ya está en el inicio, el botón de Inicio no debe aparecer */}
+        {location.pathname !== '/' && (
+          <Link to="/">
+            <button className="bg-white text-blue-600 px-3 py-1 rounded hover:bg-gray-200">
+              Inicio
+            </button>
+          </Link>
+        )}
       </nav>
     </header>
   );
