@@ -1,7 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
+
+
+interface Ong {
+  id: number;
+  name: string;
+}
 
 const CreateProjectForm: React.FC = () => {
+    const [ongs, setOngs] = useState<Ong[]>([]);
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -10,6 +17,14 @@ const CreateProjectForm: React.FC = () => {
         owner: '',
         status: 'active'
     });
+
+    useEffect(() => {
+        // Fetch ONG data from backend API
+        fetch('http://localhost:8000/ongs/')
+            .then(response => response.json())
+            .then(data => setOngs(data))
+            .catch(error => console.error('Error fetching ONGs:', error));
+    }, []);
 
       const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -113,10 +128,12 @@ const CreateProjectForm: React.FC = () => {
             className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
             required
           >
-            <option value="">Seleccione la organización responsable</option>
-            <option value="ONG Educación">ONG Educación</option>
-            <option value="ONG Salud">ONG Salud</option>
-            <option value="ONG Medio Ambiente">ONG Medio Ambiente</option>
+            <option value="">Seleccione la ONG responsable</option>
+            {ongs.map(ong => (
+              <option key={ong.id} value={ong.id}>
+                {ong.name}
+              </option>
+            ))}
           </select>
         </div>
 
