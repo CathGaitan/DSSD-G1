@@ -1,48 +1,89 @@
 import React, { useState, useEffect } from "react";
 
-
-
 interface Ong {
   id: number;
   name: string;
 }
 
 const CreateProjectForm: React.FC = () => {
-    const [ongs, setOngs] = useState<Ong[]>([]);
-    const [formData, setFormData] = useState({
-        name: '',
-        description: '',
-        start_date: '',
-        end_date: '',
-        owner: '',
-        status: 'active'
-    });
+  const [ongs, setOngs] = useState<Ong[]>([]);
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    start_date: "",
+    end_date: "",
+    owner: "",
+    status: "active",
+  });
 
-    useEffect(() => {
-        // Fetch ONG data from backend API
-        fetch('http://localhost:8000/ongs/')
-            .then(response => response.json())
-            .then(data => setOngs(data))
-            .catch(error => console.error('Error fetching ONGs:', error));
-    }, []);
+  const [dateError, setDateError] = useState("");
 
-      const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  useEffect(() => {
+    // Fetch ONG data from backend API
+    fetch("http://localhost:8000/ongs/")
+      .then((response) => response.json())
+      .then((data) => setOngs(data))
+      .catch((error) => console.error("Error fetching ONGs:", error));
+  }, []);
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    const newFormData = { ...formData, [name]: value };
+    setFormData(newFormData);
+
+    // Validación en tiempo real para fechas
+    if (name === "start_date" || name === "end_date") {
+      const start = new Date(newFormData.start_date);
+      const end = new Date(newFormData.end_date);
+
+      if (newFormData.start_date && newFormData.end_date && end < start) {
+        setDateError(
+          "❌ La fecha de finalización no puede ser anterior a la de inicio."
+        );
+      } else {
+        setDateError("");
+      }
+    }
   };
 
-    const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (dateError) {
+      alert("Corrige los errores antes de enviar el formulario.");
+      return;
+    }
+
     console.log("Nuevo Proyecto:", formData);
     alert("✅ Proyecto creado con éxito!");
-    setFormData({ name: "", description: "", start_date: "", end_date: "", owner: "", status: "active" });
+    setFormData({
+      name: "",
+      description: "",
+      start_date: "",
+      end_date: "",
+      owner: "",
+      status: "active",
+    });
   };
 
   const handleReset = () => {
-    setFormData({ name: "", description: "", start_date: "", end_date: "", owner: "", status: "active" });
+    setFormData({
+      name: "",
+      description: "",
+      start_date: "",
+      end_date: "",
+      owner: "",
+      status: "active",
+    });
+    setDateError("");
   };
 
   return (
-    <div className="max-w-2xl mx-auto mt-8 bg-white shadow-md rounded-lg border border-gray-200">
+    <div className="w-full h-full bg-white shadow-md rounded-lg border border-gray-200">
       {/* Encabezado */}
       <div className="bg-blue-50 border-b border-gray-200 p-4 rounded-t-lg">
         <h2 className="text-lg font-semibold text-blue-700 flex items-center gap-2">
@@ -54,7 +95,10 @@ const CreateProjectForm: React.FC = () => {
       </div>
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <form
+        onSubmit={handleSubmit}
+        className="p-6 space-y-4 w-full h-full flex flex-col"
+      >
         {/* Nombre del proyecto */}
         <div>
           <label className="block text-gray-700 font-medium mb-1">
@@ -95,7 +139,7 @@ const CreateProjectForm: React.FC = () => {
             <input
               type="date"
               name="start_date"
-              value={formData["start_date"]}
+              value={formData.start_date}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
               required
@@ -108,11 +152,16 @@ const CreateProjectForm: React.FC = () => {
             <input
               type="date"
               name="end_date"
-              value={formData["end_date"]}
+              value={formData.end_date}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              className={`w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 ${
+                dateError ? "border-red-500 focus:ring-red-400" : "focus:ring-blue-400"
+              }`}
               required
             />
+            {dateError && (
+              <p className="text-red-500 text-sm mt-1">{dateError}</p>
+            )}
           </div>
         </div>
 
@@ -129,7 +178,7 @@ const CreateProjectForm: React.FC = () => {
             required
           >
             <option value="">Seleccione la ONG responsable</option>
-            {ongs.map(ong => (
+            {ongs.map((ong) => (
               <option key={ong.id} value={ong.id}>
                 {ong.name}
               </option>
@@ -142,6 +191,7 @@ const CreateProjectForm: React.FC = () => {
           <button
             type="submit"
             className="bg-yellow-400 text-white font-medium px-4 py-2 rounded hover:bg-yellow-500 transition"
+            disabled={!!dateError}
           >
             Crear Proyecto
           </button>
@@ -157,5 +207,5 @@ const CreateProjectForm: React.FC = () => {
     </div>
   );
 };
-export default CreateProjectForm;
 
+export default CreateProjectForm;
