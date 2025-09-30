@@ -9,7 +9,7 @@ class TaskBase(BaseModel):
     start_date: date
     end_date: date
     resolves_by_itself: bool
-    ong_that_solves: Optional[str] = None
+    ong_that_solves: int
 
     model_config = {
         "from_attributes": True

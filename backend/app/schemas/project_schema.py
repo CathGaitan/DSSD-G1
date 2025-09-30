@@ -9,7 +9,7 @@ class ProjectBase(BaseModel):
     description: str
     start_date: date
     end_date: date
-    owner: str
+    owner: int
     status: Optional[str] = "active"
 
     model_config = {
@@ -41,7 +41,7 @@ class ProjectBase(BaseModel):
 
     @field_validator("owner")
     def validate_owner(cls, v):
-        if not v.strip():
+        if v is None:
             raise ValueError("El propietario del proyecto no puede estar vacío.")
         return v
 

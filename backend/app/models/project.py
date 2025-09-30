@@ -11,6 +11,6 @@ class Project(Base):
     description = Column(Text, nullable=True)
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
-    owner = Column(String(100), nullable=False)
+    owner = Column(Integer, nullable=False)
     status = Column(String(50), nullable=False, default="active")
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
