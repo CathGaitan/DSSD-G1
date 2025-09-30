@@ -9,7 +9,7 @@ class ProjectBase(BaseModel):
     description: str
     start_date: date
     end_date: date
-    owner: str
+    owner_id: int #tuve que cambiar owner a owner_id porque estaba como string
     status: Optional[str] = "active"
 
     model_config = {
@@ -39,9 +39,9 @@ class ProjectBase(BaseModel):
             raise ValueError("La descripción del proyecto debe tener al menos 15 caracteres.")
         return v
 
-    @field_validator("owner")
+    @field_validator("owner_id")
     def validate_owner(cls, v):
-        if not v.strip():
+        if not v:
             raise ValueError("El propietario del proyecto no puede estar vacío.")
         return v
 
