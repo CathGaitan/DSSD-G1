@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Date
+from sqlalchemy import Column, Integer, String, Text, Date, ForeignKey
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 
@@ -11,6 +11,7 @@ class Project(Base):
     description = Column(Text, nullable=True)
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
-    owner = Column(String(100), nullable=False)
+    owner_id = Column(Integer, ForeignKey("ongs.id"), nullable=False)
+    ong_responsable = relationship("Ong", back_populates="project_ong")
     status = Column(String(50), nullable=False, default="active")
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
