@@ -39,12 +39,6 @@ class ProjectBase(BaseModel):
             raise ValueError("La descripción del proyecto debe tener al menos 15 caracteres.")
         return v
 
-    @field_validator("owner_id")
-    def validate_owner(cls, v):
-        if not v:
-            raise ValueError("El propietario del proyecto no puede estar vacío.")
-        return v
-
     @model_validator(mode="after")
     def validate_dates(self):
         if self.end_date < self.start_date:

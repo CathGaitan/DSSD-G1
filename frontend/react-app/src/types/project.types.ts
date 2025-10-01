@@ -16,6 +16,6 @@ export interface ProjectFormData {
   description: string;
   start_date: string;
   end_date: string;
-  owner_id: string;
+  owner_id: number;
   status: string;
 }

@@ -13,7 +13,7 @@ const CreateProjectForm: React.FC = () => {
     description: '',
     start_date: '',
     end_date: '',
-    owner_id: '',
+    owner_id: 0,
     status: 'active',
   });
   const [dateError, setDateError] = useState('');
@@ -199,12 +199,16 @@ const CreateProjectForm: React.FC = () => {
 
     try {
       setLoading(true);
+      // Convertir owner_id a int antes de enviar
+      const payload = { ...formData, owner_id: parseInt(formData.owner_id as string, 10), tasks };
+      console.log(JSON.stringify(payload));
       const response = await fetch('http://localhost:8000/projects/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...formData, tasks }),
+        body: JSON.stringify(payload),
       });
 
+      console.log(response);
       if (!response.ok) {
         throw new Error(`Error ${response.status}: No se pudo crear el proyecto`);
       }
