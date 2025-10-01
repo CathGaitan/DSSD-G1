@@ -22,21 +22,45 @@ class ProjectService:
             project = self.project_repo.create(project_dict)
             tasks_data = self._prepare_tasks_data(project_data.tasks, project.id)
             self.task_repo.create_multiple_tasks(tasks_data)
+
             # Arranca envio de datos a bonita
             self.bonita.login()
             process_id = self.bonita.get_process_id_by_name(self.process_name)
             case_id = self.bonita.initiate_process(process_id).get("caseId")
-            time.sleep(2) # Sino task_data devuelve vacio
+            time.sleep(2)
             task_id = self.bonita.start_human_tasks(case_id)[0].get("id")
             self.bonita.assign_task(task_id)
+
+            # Preparar las tasks en el formato correcto
+            tasks_bonita = []
+            for task in tasks_data:
+                tasks_bonita.append({
+                    "task_title": task["title"],
+                    "task_necessity": task["necessity"],
+                    "task_start_date": task["start_date"].strftime("%Y-%m-%d"),
+                })
+            print("----------------------------------------------")
+            # Enviar el objeto completo anidado
             self.bonita.send_form_data(task_id, {
-                "project_name": project_data.name,
-                "project_description": project_data.description,
-                "project_start_date": project_data.start_date.strftime("%Y-%m-%d"),
-                "project_owner": project_data.owner,
+                "projectDataInput": {  # Nombre del input COMPLEX en tu contrato
+                    "project_name": project_data.name,
+                    "project_description": project_data.description,
+                    "project_start_date": project_data.start_date.strftime("%Y-%m-%d"),
+                    "project_tasks": tasks_bonita
+                }
             })
-            time.sleep(1)  # Sino no veo la variable
-            print("TEST GUARDA VAR:", self.bonita.get_variable(case_id, "project_start_date_var"))
+            time.sleep(3)
+            # Ahora puedes obtener el business object completo
+            project_name = self.bonita.get_variable(case_id, "project_name")
+            project_description = self.bonita.get_variable(case_id, "project_description")
+            project_start_date = self.bonita.get_variable(case_id, "project_start_date")
+            project_tasks = self.bonita.get_variable(case_id, "project_tasks")
+
+            print("Nombre:", project_name)
+            print("Descripción:", project_description)
+            print("Fecha de inicio:", project_start_date)
+            print("Tareas:", project_tasks)
+
             return project
         except Exception:
             self.project_repo.db.rollback()

@@ -99,3 +99,11 @@ class BonitaClient:
         response.raise_for_status()
         return response.json()
 
+    def get_business_variable(self, case_id, variable_name):
+        self.is_logged()
+        url = f"{self.base_url}/API/bdm/businessData/{variable_name}?c=caseId={case_id}"
+        response = self.session.get(url)
+        if response.status_code == 404:
+            return {"error": "Variable not found"}
+        response.raise_for_status()
+        return response.json()
