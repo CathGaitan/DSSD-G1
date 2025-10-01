@@ -27,6 +27,14 @@ const CreateProjectForm: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([
     { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false },
   ]);
+  const [tasksErrors, setTasksErrors] = useState<Array<{
+    title: string;
+    necessity: string;
+    start_date: string;
+    end_date: string;
+  }>>([
+    { title: '', necessity: '', start_date: '', end_date: '' },
+  ]);
   const [loading, setLoading] = useState(false);
   
   // Hook para las alertas
@@ -135,6 +143,100 @@ const CreateProjectForm: React.FC = () => {
     return isValid;
   };
 
+  // --- Validación de tareas ---
+  const validateTaskField = (index: number, name: string, value: string) => {
+    let error = '';
+    
+    switch (name) {
+      case 'title':
+        if (!value.trim()) {
+          error = 'El título de la tarea es obligatorio';
+        } else if (value.trim().length < 3) {
+          error = 'El título debe tener al menos 3 caracteres';
+        }
+        break;
+      case 'necessity':
+        if (!value.trim()) {
+          error = 'La descripción es obligatoria';
+        } else if (value.trim().length < 10) {
+          error = 'La descripción debe tener al menos 10 caracteres';
+        }
+        break;
+      case 'start_date':
+        if (!value) {
+          error = 'La fecha de inicio es obligatoria';
+        }
+        break;
+      case 'end_date':
+        if (!value) {
+          error = 'La fecha de finalización es obligatoria';
+        }
+        break;
+    }
+    
+    const newTasksErrors = [...tasksErrors];
+    newTasksErrors[index] = { ...newTasksErrors[index], [name]: error };
+    setTasksErrors(newTasksErrors);
+    
+    return error === '';
+  };
+
+  const validateAllTasks = () => {
+    const errors: Array<{
+      title: string;
+      necessity: string;
+      start_date: string;
+      end_date: string;
+    }> = [];
+    let isValid = true;
+
+    tasks.forEach((task, index) => {
+      const taskError = {
+        title: '',
+        necessity: '',
+        start_date: '',
+        end_date: '',
+      };
+
+      if (!task.title.trim()) {
+        taskError.title = 'El título de la tarea es obligatorio';
+        isValid = false;
+      } else if (task.title.trim().length < 3) {
+        taskError.title = 'El título debe tener al menos 3 caracteres';
+        isValid = false;
+      }
+
+      if (!task.necessity.trim()) {
+        taskError.necessity = 'La descripción es obligatoria';
+        isValid = false;
+      } else if (task.necessity.trim().length < 10) {
+        taskError.necessity = 'La descripción debe tener al menos 10 caracteres';
+        isValid = false;
+      }
+
+      if (!task.start_date) {
+        taskError.start_date = 'La fecha de inicio es obligatoria';
+        isValid = false;
+      }
+
+      if (!task.end_date) {
+        taskError.end_date = 'La fecha de finalización es obligatoria';
+        isValid = false;
+      }
+
+      // Validar que la fecha de fin sea posterior a la de inicio
+      if (task.start_date && task.end_date && new Date(task.end_date) < new Date(task.start_date)) {
+        taskError.end_date = 'La fecha de fin debe ser posterior a la de inicio';
+        isValid = false;
+      }
+
+      errors.push(taskError);
+    });
+
+    setTasksErrors(errors);
+    return isValid;
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -181,21 +283,36 @@ const CreateProjectForm: React.FC = () => {
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     };
     setTasks(updatedTasks);
+
+    // Validar el campo mientras se escribe
+    if (name !== 'resolves_by_itself') {
+      validateTaskField(index, name, value);
+    }
   };
 
   const addTask = () => {
     setTasks([...tasks, { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false }]);
+    setTasksErrors([...tasksErrors, { title: '', necessity: '', start_date: '', end_date: '' }]);
   };
 
   const removeTask = (index: number) => {
     if (tasks.length > 1) {
       setTasks(tasks.filter((_, i) => i !== index));
+      setTasksErrors(tasksErrors.filter((_, i) => i !== index));
     }
   };
 
   // --- Submit final ---
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validar todas las tareas antes de enviar
+    const isValid = validateAllTasks();
+    
+    if (!isValid) {
+      showAlert('warning', 'Por favor completa todos los campos de las tareas correctamente.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -220,6 +337,7 @@ const CreateProjectForm: React.FC = () => {
       // Reset
       setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: '', status: 'active' });
       setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false }]);
+      setTasksErrors([{ title: '', necessity: '', start_date: '', end_date: '' }]);
       setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
       setStep(1);
     } catch (error) {
@@ -259,6 +377,7 @@ const CreateProjectForm: React.FC = () => {
               <TasksForm
                 tasks={tasks}
                 loading={loading}
+                tasksErrors={tasksErrors}
                 onSubmit={handleFinalSubmit}
                 onBack={() => setStep(1)}
                 onTaskChange={handleTaskChange}
