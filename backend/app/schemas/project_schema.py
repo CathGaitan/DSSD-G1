@@ -65,7 +65,7 @@ class ProjectCreate(ProjectBase):
     def set_ong_if_resolves_by_itself(self):
         for task in self.tasks:
             if task.resolves_by_itself:
-                task.ong_that_solves = self.owner
+                task.ong_that_solves = self.owner_id
         return self
 
 

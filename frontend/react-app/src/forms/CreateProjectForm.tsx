@@ -1,37 +1,140 @@
-import React, { useState, useEffect } from "react";
-
-interface Ong {
-  id: number;
-  name: string;
-}
+import React, { useState, useEffect } from 'react';
+import { StepIndicator } from '../components/project/StepIndicator';
+import { ProjectForm } from '../components/project/ProjectForm';
+import { TasksForm } from '../components/project/TasksForm';
+import { Alert, useAlert } from '../components/ui/Alert';
+import type { Ong, Task, ProjectFormData } from '../types/project.types';
 
 const CreateProjectForm: React.FC = () => {
-  const [step, setStep] = useState(1); // 1 = proyecto, 2 = tareas
+  const [step, setStep] = useState(1);
   const [ongs, setOngs] = useState<Ong[]>([]);
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    start_date: "",
-    end_date: "",
-    owner_id: "",
-    status: "active",
+  const [formData, setFormData] = useState<ProjectFormData>({
+    name: '',
+    description: '',
+    start_date: '',
+    end_date: '',
+    owner_id: '',
+    status: 'active',
   });
-
-  const [dateError, setDateError] = useState("");
-  const [tasks, setTasks] = useState([
-    { title: "", necessity: "", start_date: "", end_date: "", resolves_by_itself: false },
+  const [dateError, setDateError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({
+    name: '',
+    description: '',
+    start_date: '',
+    end_date: '',
+    owner_id: '',
+  });
+  const [tasks, setTasks] = useState<Task[]>([
+    { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false },
   ]);
-  const [taskErrors, setTaskErrors] = useState<string[]>([""]);
   const [loading, setLoading] = useState(false);
+  
+  // Hook para las alertas
+  const { alert, showAlert, closeAlert } = useAlert();
 
   useEffect(() => {
-    fetch("http://localhost:8000/ongs/")
+    fetch('http://localhost:8000/ongs/')
       .then((response) => response.json())
       .then((data) => setOngs(data))
-      .catch((error) => console.error("Error fetching ONGs:", error));
+      .catch((error) => {
+        console.error('Error fetching ONGs:', error);
+        showAlert('error', 'Error al cargar las ONGs');
+      });
   }, []);
 
-  // --- Manejo del form proyecto ---
+  const validateDates = (start: string, end: string) => {
+    if (start && end && new Date(end) < new Date(start)) {
+      setDateError('La fecha de finalización no puede ser anterior a la de inicio.');
+    } else {
+      setDateError('');
+    }
+  };
+
+  const validateField = (name: string, value: string) => {
+    let error = '';
+    
+    switch (name) {
+      case 'name':
+        if (!value.trim()) {
+          error = 'El nombre del proyecto es obligatorio';
+        } else if (value.trim().length < 3) {
+          error = 'El nombre debe tener al menos 3 caracteres';
+        }
+        break;
+      case 'description':
+        if (!value.trim()) {
+          error = 'La descripción es obligatoria';
+        } else if (value.trim().length < 15) {
+          error = 'La descripción debe tener al menos 15 caracteres';
+        }
+        break;
+      case 'start_date':
+        if (!value) {
+          error = 'La fecha de inicio es obligatoria';
+        }
+        break;
+      case 'end_date':
+        if (!value) {
+          error = 'La fecha de finalización es obligatoria';
+        }
+        break;
+      case 'owner_id':
+        if (!value) {
+          error = 'Debes seleccionar una ONG';
+        }
+        break;
+    }
+    
+    setFieldErrors(prev => ({ ...prev, [name]: error }));
+    return error === '';
+  };
+
+  const validateAllFields = () => {
+    const errors = {
+      name: '',
+      description: '',
+      start_date: '',
+      end_date: '',
+      owner_id: '',
+    };
+    
+    let isValid = true;
+
+    if (!formData.name.trim()) {
+      errors.name = 'El nombre del proyecto es obligatorio';
+      isValid = false;
+    } else if (formData.name.trim().length < 3) {
+      errors.name = 'El nombre debe tener al menos 3 caracteres';
+      isValid = false;
+    }
+
+    if (!formData.description.trim()) {
+      errors.description = 'La descripción es obligatoria';
+      isValid = false;
+    } else if (formData.description.trim().length < 15) {
+      errors.description = 'La descripción debe tener al menos 15 caracteres';
+      isValid = false;
+    }
+
+    if (!formData.start_date) {
+      errors.start_date = 'La fecha de inicio es obligatoria';
+      isValid = false;
+    }
+
+    if (!formData.end_date) {
+      errors.end_date = 'La fecha de finalización es obligatoria';
+      isValid = false;
+    }
+
+    if (!formData.owner_id) {
+      errors.owner_id = 'Debes seleccionar una ONG';
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -39,46 +142,54 @@ const CreateProjectForm: React.FC = () => {
     const newFormData = { ...formData, [name]: value };
     setFormData(newFormData);
 
-    if (name === "start_date" || name === "end_date") {
-      const start = new Date(newFormData.start_date);
-      const end = new Date(newFormData.end_date);
+    // Validar el campo mientras se escribe
+    validateField(name, value);
 
-      if (newFormData.start_date && newFormData.end_date && end < start) {
-        setDateError("❌ La fecha de finalización no puede ser anterior a la de inicio.");
-      } else {
-        setDateError("");
-      }
+    if (name === 'start_date' || name === 'end_date') {
+      validateDates(newFormData.start_date, newFormData.end_date);
     }
   };
 
   const handleProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (dateError) return alert("Corrige las fechas antes de continuar.");
-    setStep(2); // paso a tareas
+    
+    // Validar todos los campos
+    const isValid = validateAllFields();
+    
+    if (!isValid) {
+      showAlert('warning', 'Por favor completa todos los campos obligatorios correctamente.');
+      return;
+    }
+    
+    if (dateError) {
+      showAlert('warning', 'Corrige las fechas antes de continuar.');
+      return;
+    }
+    
+    setStep(2);
   };
 
   // --- Manejo de tareas ---
-  const handleTaskChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleTaskChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value, type } = e.target;
     const updatedTasks = [...tasks];
     updatedTasks[index] = {
       ...updatedTasks[index],
-      [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
     };
     setTasks(updatedTasks);
   };
 
   const addTask = () => {
-    setTasks([...tasks, { title: "", necessity: "", start_date: "", end_date: "", resolves_by_itself: false }]);
-    setTaskErrors([...taskErrors, ""]);
+    setTasks([...tasks, { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false }]);
   };
 
   const removeTask = (index: number) => {
     if (tasks.length > 1) {
-      const updatedTasks = tasks.filter((_, i) => i !== index);
-      const updatedErrors = taskErrors.filter((_, i) => i !== index);
-      setTasks(updatedTasks);
-      setTaskErrors(updatedErrors);
+      setTasks(tasks.filter((_, i) => i !== index));
     }
   };
 
@@ -86,20 +197,12 @@ const CreateProjectForm: React.FC = () => {
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload = {
-      ...formData,
-      tasks: tasks,
-    };
-
     try {
       setLoading(true);
-      console.log("Payload enviado:", payload);
-      const response = await fetch("http://localhost:8000/projects/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      const response = await fetch('http://localhost:8000/projects/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, tasks }),
       });
 
       if (!response.ok) {
@@ -107,196 +210,61 @@ const CreateProjectForm: React.FC = () => {
       }
 
       const data = await response.json();
-      alert("✅ Proyecto y tareas creados con éxito!");
-      console.log("Proyecto creado:", data);
+      showAlert('success', 'Proyecto y tareas creados con éxito!');
+      console.log('Proyecto creado:', data);
 
-      // reset
-      setFormData({ name: "", description: "", start_date: "", end_date: "", owner_id: "", status: "active" });
-      setTasks([{ title: "", necessity: "", start_date: "", end_date: "", resolves_by_itself: false }]);
+      // Reset
+      setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: '', status: 'active' });
+      setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false }]);
+      setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
       setStep(1);
     } catch (error) {
-      console.error("Error creando el proyecto:", error);
-      alert("❌ Hubo un error al crear el proyecto.");
+      console.error('Error creando el proyecto:', error);
+      showAlert('error', 'Hubo un error al crear el proyecto.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full h-full bg-white shadow-md rounded-lg border border-gray-200">
-      {/* --- Paso 1: Proyecto --- */}
-      {step === 1 && (
-        <form onSubmit={handleProjectSubmit} className="p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-blue-700">📑 Información del Proyecto</h2>
-
-          <div>
-            <label className="block text-gray-700">Nombre del Proyecto</label>
-            <input
-              type="text"
-              name="name"
-              placeholder="Ej: Construcción de un Centro Comunitario en Barrio Altos de San Lorenzo"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="w-full border rounded px-3 py-2"
-            />
-          </div>
-
-          <div>
-            <label className="block text-gray-700">Descripción</label>
-            <textarea
-              name="description"
-              placeholder="Describe brevemente el proyecto..."
-              value={formData.description}
-              onChange={handleChange}
-              required
-              className="w-full border rounded px-3 py-2"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-gray-700">Fecha de Inicio</label>
-              <input
-                type="date"
-                name="start_date"
-                value={formData.start_date}
-                onChange={handleChange}
-                required
-                className="w-full border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700">Fecha de Finalización</label>
-              <input
-                type="date"
-                name="end_date"
-                value={formData.end_date}
-                onChange={handleChange}
-                required
-                className={`w-full border rounded px-3 py-2 ${dateError ? "border-red-500" : ""}`}
-              />
-              {dateError && <p className="text-red-500 text-sm">{dateError}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-gray-700">ONG Responsable</label>
-            <select
-              name="owner_id"
-              value={formData.owner_id}
-              onChange={handleChange}
-              required
-              className="w-full border rounded px-3 py-2"
-            >
-              <option value="">Seleccione una ONG</option>
-              {ongs.map((ong) => (
-                <option key={ong.id} value={ong.id}>
-                  {ong.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="submit"
-            disabled={!!dateError}
-            className="bg-yellow-400 text-white px-4 py-2 rounded"
-          >
-            Siguiente: Agregar Tareas
-          </button>
-        </form>
+    <div className="w-full">
+      {/* Componente de alerta */}
+      {alert.show && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={closeAlert}
+        />
       )}
+      
+      <div className="max-w-4xl mx-auto">
+        <div className="bg-white shadow-2xl rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="p-8">
+            <StepIndicator currentStep={step} totalSteps={2} />
 
-      {/* --- Paso 2: Tareas --- */}
-      {step === 2 && (
-        <form onSubmit={handleFinalSubmit} className="p-6 space-y-4">
-          <h2 className="text-lg font-semibold text-blue-700">📝 Tareas del Proyecto</h2>
-
-          {tasks.map((task, index) => (
-            <div key={index} className="border p-4 rounded space-y-2">
-              <input
-                type="text"
-                name="title"
-                placeholder="Título de la tarea"
-                value={task.title}
-                onChange={(e) => handleTaskChange(index, e)}
-                required
-                className="w-full border rounded px-3 py-2"
+            {step === 1 ? (
+              <ProjectForm
+                formData={formData}
+                ongs={ongs}
+                dateError={dateError}
+                fieldErrors={fieldErrors}
+                onSubmit={handleProjectSubmit}
+                onChange={handleChange}
               />
-
-              <textarea
-                name="necessity"
-                placeholder="Necesidad (especifica qué se necesita para esta tarea)"
-                value={task.necessity}
-                onChange={(e) => handleTaskChange(index, e)}
-                required
-                className="w-full border rounded px-3 py-2"
+            ) : (
+              <TasksForm
+                tasks={tasks}
+                loading={loading}
+                onSubmit={handleFinalSubmit}
+                onBack={() => setStep(1)}
+                onTaskChange={handleTaskChange}
+                onAddTask={addTask}
+                onRemoveTask={removeTask}
               />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  type="date"
-                  name="start_date"
-                  value={task.start_date}
-                  onChange={(e) => handleTaskChange(index, e)}
-                  required
-                  className="w-full border rounded px-3 py-2"
-                />
-                <input
-                  type="date"
-                  name="end_date"
-                  value={task.end_date}
-                  onChange={(e) => handleTaskChange(index, e)}
-                  required
-                  className="w-full border rounded px-3 py-2"
-                />
-              </div>
-
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="resolves_by_itself"
-                  checked={task.resolves_by_itself}
-                  onChange={(e) => handleTaskChange(index, e)}
-                />
-                ¿Se resuelve por la ONG Responsable?
-              </label>
-
-              {tasks.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeTask(index)}
-                  className="text-red-500 text-sm"
-                >
-                  Eliminar tarea
-                </button>
-              )}
-            </div>
-          ))}
-
-          <button
-            type="button"
-            onClick={addTask}
-            className="bg-blue-400 text-white px-3 py-1 rounded"
-          >
-            ➕ Agregar otra tarea
-          </button>
-
-          <div className="flex justify-between">
-            <button type="button" onClick={() => setStep(1)} className="text-gray-500">
-              ⬅ Volver
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-green-500 text-white px-4 py-2 rounded"
-            >
-              {loading ? "Creando..." : "✅ Crear Proyecto con Tareas"}
-            </button>
+            )}
           </div>
-        </form>
-      )}
+        </div>
+      </div>
     </div>
   );
 };
