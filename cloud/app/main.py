@@ -7,6 +7,7 @@ from app.models import *
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Projects API")
+const port = process.env.PORT || 4000
 
 origins = [
     "http://localhost:5173",  #  frontend vite
