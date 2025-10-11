@@ -52,7 +52,7 @@ services:
     depends_on:
       - db
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_CLOUD_URL=${DATABASE_CLOUD_URL}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 

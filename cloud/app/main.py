@@ -6,7 +6,7 @@ from app.models import *
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Projects API")
+app = FastAPI(title="Cloud API")
 
 origins = [
     "http://localhost:5173",  #  frontend vite
