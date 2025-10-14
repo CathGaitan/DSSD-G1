@@ -1,3 +1,4 @@
+from app.schemas.ong_schema import OngResponse
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from app.schemas.user_schema import UserCreate, UserResponse
@@ -31,3 +32,32 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     UserService(db).delete_user(user_id)  
     return
+
+# Get ONGs associated with a user
+@router.get("/{user_id}/ongs", response_model=List[OngResponse])
+def get_user_ongs(user_id: int, db: Session = Depends(get_db)):
+    user_service = UserService(db)
+    ongs = user_service.get_ongs_for_user(user_id)
+    if ongs is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return ongs
+
+# Associate a user with an ONG
+@router.post("/{user_id}/ongs/{ong_id}", status_code=201)
+def associate_user_with_ong(user_id: int, ong_id: int, db: Session = Depends(get_db)):
+    user_service = UserService(db)
+    try:
+        user_service.add_user_to_ong(user_id, ong_id)
+    except HTTPException as e:
+        raise e
+    return {"message": "User associated with ONG successfully"}
+
+# Disassociate a user from an ONG
+@router.delete("/{user_id}/ongs/{ong_id}", status_code=204)
+def disassociate_user_from_ong(user_id: int, ong_id: int, db: Session = Depends(get_db)):
+    user_service = UserService(db)
+    try:
+        user_service.remove_user_from_ong(user_id, ong_id)
+    except HTTPException as e:
+        raise e
+    return {"message": "User disassociated from ONG successfully"}
