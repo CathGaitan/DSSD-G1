@@ -8,8 +8,16 @@ const Header: React.FC = () => {
     { path: '/login', label: 'Login', icon: '' },
     { path: '/create-project', label: 'Crear Proyecto', icon: '' },
     { path: '/projects', label: 'Ver Proyectos', icon: '' },
+    { path: '/register', label: 'Registrarse', icon: '' },
   ];
-
+  // Filtramos los botones que no deben mostrarse según la ruta actual
+  const visibleNavItems = navItems.filter(item => {
+    // Ocultamos el botón "Registrarse" cuando estamos en /register
+    if (location.pathname === '/register' && item.path === '/register') return false;
+    if (location.pathname === '/login' && item.path === '/login') return false;// Ocultamos el botón "Login" cuando estamos en /login
+    // (Agregar condiciones para ocultar otros botones en ciertas rutas)
+    return true;
+  });
   return (
     <header className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white px-4 sm:px-6 py-3 flex items-center justify-between fixed top-0 left-0 w-full shadow-lg z-50 backdrop-blur-sm bg-opacity-95">
       {/* Logo / Nombre con animación */}
@@ -24,7 +32,7 @@ const Header: React.FC = () => {
 
       {/* Menú de navegación */}
       <nav className="flex items-center gap-2">
-        {navItems.map((item) => (
+   {visibleNavItems.map((item) => (
           <Link key={item.path} to={item.path}>
             <button
               className={`px-3 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm ${

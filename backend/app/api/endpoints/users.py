@@ -23,7 +23,7 @@ def get_me(current_user: UserResponse = Depends(get_current_user)):
     return current_user
 
 # Create a new user
-@router.post("/", response_model=UserResponse, status_code=201)
+@router.post("/create", response_model=UserResponse, status_code=201)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
     return UserService(db).create_user(user_in)
 
