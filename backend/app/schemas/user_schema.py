@@ -1,4 +1,3 @@
-from app.schemas.task_schema import TaskCreate
 from pydantic import BaseModel, EmailStr, constr, field_validator
 from typing import List, Optional, Annotated
 from app.schemas.ong_schema import OngResponse
