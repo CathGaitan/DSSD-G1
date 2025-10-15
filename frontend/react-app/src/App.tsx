@@ -1,10 +1,10 @@
 import { useState } from 'react'
-// import './App.css'  // ← COMENTA O ELIMINA ESTA LÍNEA
 import Home from './pages/Home'
 import Layout from './components/Layout'
 import CreateProjectForm from './forms/CreateProjectForm'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import RegisterForm from './forms/RegisterForm';
+import CollaborationRequests from './pages/CollaborationRequests';
 
 function App() {
   return (
@@ -15,7 +15,7 @@ function App() {
           <Route path="/create-project" element={<CreateProjectForm />} />
           <Route path="/register" element={<RegisterForm />} />
           {/* <Route path="/login" element={<LoginForm />} /> */}
-          {/* <Route path="/projects" element={<Projects />} /> */}
+          <Route path="/collaboration-requests" element={<CollaborationRequests />} />
         </Routes>
       </Layout>
     </Router>
