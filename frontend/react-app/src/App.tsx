@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import Layout from './components/Layout'
 import CreateProjectForm from './forms/CreateProjectForm'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import RegisterForm from './forms/RegisterForm';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/create-project" element={<CreateProjectForm />} />
+          <Route path="/register" element={<RegisterForm />} />
           {/* <Route path="/login" element={<LoginForm />} /> */}
           {/* <Route path="/projects" element={<Projects />} /> */}
         </Routes>

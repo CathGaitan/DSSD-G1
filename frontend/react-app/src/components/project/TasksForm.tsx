@@ -6,6 +6,12 @@ import type { Task } from '../../types/project.types';
 interface TasksFormProps {
   tasks: Task[];
   loading: boolean;
+  tasksErrors: Array<{
+    title: string;
+    necessity: string;
+    start_date: string;
+    end_date: string;
+  }>;
   onSubmit: (e: React.FormEvent) => void;
   onBack: () => void;
   onTaskChange: (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -15,7 +21,8 @@ interface TasksFormProps {
 
 export const TasksForm: React.FC<TasksFormProps> = ({ 
   tasks, 
-  loading, 
+  loading,
+  tasksErrors,
   onSubmit, 
   onBack, 
   onTaskChange, 
@@ -27,11 +34,16 @@ export const TasksForm: React.FC<TasksFormProps> = ({
     onSubmit(e);
   };
 
+  // Verificar si hay algún error en las tareas
+  const hasErrors = tasksErrors.some(taskError => 
+    Object.values(taskError).some(error => error !== '')
+  );
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-xl border border-purple-200">
         <h2 className="text-2xl font-bold text-purple-900 mb-2 flex items-center gap-2">
-          <span>📝</span> Tareas del Proyecto
+          <span>📋</span> Tareas del Proyecto
         </h2>
         <p className="text-sm text-purple-700">Define las tareas necesarias para completar el proyecto</p>
       </div>
@@ -43,6 +55,7 @@ export const TasksForm: React.FC<TasksFormProps> = ({
             task={task}
             index={index}
             canRemove={tasks.length > 1}
+            taskErrors={tasksErrors[index]}
             onChange={onTaskChange}
             onRemove={onRemoveTask}
           />
@@ -62,7 +75,7 @@ export const TasksForm: React.FC<TasksFormProps> = ({
         <Button type="button" onClick={onBack} variant="ghost">
           ← Volver
         </Button>
-        <Button type="submit" variant="success" disabled={loading} onClick={handleSubmit}>
+        <Button type="submit" variant="success" disabled={loading || hasErrors} onClick={handleSubmit}>
           {loading ? (
             <>
               <span className="inline-block animate-spin mr-2">⏳</span>
