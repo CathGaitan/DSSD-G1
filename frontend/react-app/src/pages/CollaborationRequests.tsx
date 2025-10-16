@@ -12,12 +12,17 @@ interface CollaborationRequest {
   createdDate: string;
   endDate: string;
   status: 'activo' | 'completado';
+  committedBy?: string;
+  commitDate?: string;
 }
 
 const CollaborationRequestsView: React.FC = () => {
   const [requests, setRequests] = useState<CollaborationRequest[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [selectedRequest, setSelectedRequest] = useState<CollaborationRequest | null>(null);
+  const [showCommitModal, setShowCommitModal] = useState(false);
+  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ongInfoData, setOngInfoData] = useState<Ong[]>([]);
@@ -38,7 +43,9 @@ const CollaborationRequestsView: React.FC = () => {
           organizerONG: project.owner_id.toString(),
           createdDate: project.start_date,
           endDate: task.end_date,
-          status: mapProjectStatusToRequestStatus(project.status)
+          status: mapProjectStatusToRequestStatus(project.status),
+          committedBy: undefined,
+          commitDate: undefined
         });
       });
     });
@@ -68,10 +75,6 @@ const CollaborationRequestsView: React.FC = () => {
           api.getProjects(),
           api.getOngs()
         ]);
-        
-        console.log('Fetched projects:', projectsData);
-        console.log('Fetched ONGs:', ongsData);
-        
         const transformedRequests = transformProjectsToRequests(projectsData);
         setRequests(transformedRequests);
         setOngInfoData(ongsData);
@@ -116,6 +119,36 @@ const CollaborationRequestsView: React.FC = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentRequests = filteredRequests.slice(startIndex, endIndex);
+
+  // Comprometer ayuda
+  const handleCommit = (request: CollaborationRequest) => {
+    setSelectedRequest(request);
+    setShowCommitModal(true);
+  };
+
+  const confirmCommit = async () => {
+    if (selectedRequest && selectedOrgId) {
+      try {
+        // Hacer POST al backend para guardar la relación
+        const taskId = selectedRequest.id.split('-')[0];
+        await api.commitTaskToOng(Number(taskId), selectedOrgId);
+        
+        // Cerrar modal y limpiar estado
+        setShowCommitModal(false);
+        setSelectedOrgId(null);
+        setSelectedRequest(null);
+        
+        // Recargar los datos desde la API para reflejar los cambios
+        const projectsData = await api.getProjects();
+        const transformedRequests = transformProjectsToRequests(projectsData);
+        setRequests(transformedRequests);
+        
+      } catch (error) {
+        console.error('Error al comprometer la ayuda:', error);
+        alert('Error al guardar el compromiso. Intenta de nuevo.');
+      }
+    }
+  };
 
   // Obtener nombre de ONG por ID
   const getONGName = (ongId: string): string => {
@@ -209,6 +242,7 @@ const CollaborationRequestsView: React.FC = () => {
                 <th className="px-6 py-4 text-left text-sm font-semibold">ONG Organizadora</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Fecha Término</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Estado del proyecto</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -232,6 +266,23 @@ const CollaborationRequestsView: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     {getStatusBadge(request.status)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2">
+                      {!request.committedBy && (
+                        <button
+                          onClick={() => handleCommit(request)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                        >
+                          🤝 Comprometer
+                        </button>
+                      )}
+                      {request.committedBy && (
+                        <span className="px-4 py-2 text-blue-600 text-sm font-medium">
+                          ✓ Comprometido por {request.committedBy}
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -281,6 +332,65 @@ const CollaborationRequestsView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Modal para Comprometer Ayuda */}
+      {showCommitModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn">
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              Comprometer Ayuda
+            </h3>
+            <div className="mb-6">
+              <div className="bg-violet-50 rounded-lg p-4 mb-4">
+                <p className="text-sm font-semibold text-violet-900 mb-1">Proyecto:</p>
+                <p className="text-gray-700">{selectedRequest.projectName}</p>
+                <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Pedido:</p>
+                <p className="text-gray-700">{selectedRequest.description}</p>
+                <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Cantidad:</p>
+                <p className="text-gray-700">{selectedRequest.quantity}</p>
+                <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Fecha Término:</p>
+                <p className="text-gray-700">{selectedRequest.endDate}</p>
+              </div>
+              
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Selecciona tu Organización *
+              </label>
+              <select
+                value={selectedOrgId || ''}
+                onChange={(e) => setSelectedOrgId(Number(e.target.value))}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              >
+                <option value="">-- Selecciona una organización --</option>
+                {ongInfoData.map(org => (
+                  <option key={org.id} value={org.id}>
+                    {org.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={confirmCommit}
+                disabled={!selectedOrgId}
+                className="flex-1 px-6 py-3 bg-violet-600 text-white rounded-lg font-semibold hover:bg-violet-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirmar Compromiso
+              </button>
+              <button
+                onClick={() => {
+                  setShowCommitModal(false);
+                  setSelectedOrgId(null);
+                  setSelectedRequest(null);
+                }}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Mensaje si no hay resultados */}
       {currentRequests.length === 0 && (
