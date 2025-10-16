@@ -204,7 +204,7 @@ const CollaborationRequestsView: React.FC = () => {
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold text-violet-600">{filteredRequests.length}</div>
-            <div className="text-sm text-gray-500">pedidos activos</div>
+            <div className="text-sm text-gray-500">Cantidad de proyectos</div>
           </div>
         </div>
 
