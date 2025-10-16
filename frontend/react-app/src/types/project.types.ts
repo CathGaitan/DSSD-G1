@@ -1,15 +1,4 @@
-export interface Ong {
-  id: number;
-  name: string;
-}
-
-export interface Task {
-  title: string;
-  necessity: string;
-  start_date: string;
-  end_date: string;
-  resolves_by_itself: boolean;
-}
+import type { Task } from './task.types';
 
 export interface ProjectFormData {
   name: string;
@@ -18,4 +7,15 @@ export interface ProjectFormData {
   end_date: string;
   owner_id: number;
   status: string;
+}
+
+export interface ShowProject {
+  id: number;
+  name: string;
+  description: string;
+  start_date: string;
+  end_date: string;
+  owner_id: number;
+  status: 'active' | 'completed';
+  tasks: Task[];
 }

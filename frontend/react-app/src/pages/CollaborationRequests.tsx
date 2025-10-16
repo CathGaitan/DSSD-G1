@@ -1,13 +1,8 @@
-// Path: frontend/react-app/src/pages/CollaborationRequests.tsx
-// Este componente muestra la vista de pedidos de colaboración
-// Para integrarlo:
-// 1. Guarda este archivo en: src/pages/CollaborationRequests.tsx
-// 2. Agrega la ruta en App.tsx: <Route path="/collaboration-requests" element={<CollaborationRequests />} />
-// 3. Agrega el enlace en Header.tsx en el array navItems: { path: '/collaboration-requests', label: 'Pedidos', icon: '📋' }
+import React, { useState, useEffect } from 'react';
+import { api } from '../api/api';
+import { type ShowProject } from '../types/project.types';
+import { type Ong } from '../types/ong.types';
 
-import React, { useState } from 'react';
-
-// Tipos de datos
 interface CollaborationRequest {
   id: number;
   projectName: string;
@@ -16,138 +11,92 @@ interface CollaborationRequest {
   organizerONG: string;
   createdDate: string;
   endDate: string;
-  status: 'pendiente' | 'comprometido' | 'cumplido';
-  committedBy?: string;
-  commitDate?: string;
+  status: 'activo' | 'completado';
 }
-
-interface UserOrganization {
-  id: number;
-  name: string;
-}
-
-// Datos de ejemplo - Organizaciones del usuario
-const userOrganizations: UserOrganization[] = [
-  { id: 1, name: "Fundación Esperanza" },
-  { id: 2, name: "ONG Agua Limpia" },
-  { id: 3, name: "Farmacia Social" },
-  { id: 4, name: "Tech para Todos" },
-  { id: 5, name: "Comunidad Solidaria" }
-];
-
-// Datos de ejemplo - Pedidos
-const mockRequests: CollaborationRequest[] = [
-  {
-    id: 1,
-    projectName: "Programa de Educación Rural",
-    description: "Útiles escolares para 50 niños",
-    quantity: "50 kits",
-    organizerONG: "ONG Educación para Todos",
-    createdDate: "2025-10-01",
-    endDate: "2025-10-30",
-    status: "cumplido",
-    committedBy: "Fundación Esperanza",
-    commitDate: "2025-10-05"
-  },
-  {
-    id: 2,
-    projectName: "Acceso a Agua Potable",
-    description: "Fondos para instalación de bomba de agua",
-    quantity: "$50,000",
-    organizerONG: "Asociación Agua Vida",
-    createdDate: "2025-10-03",
-    endDate: "2025-11-15",
-    status: "comprometido",
-    committedBy: "ONG Agua Limpia",
-    commitDate: "2025-10-10"
-  },
-  {
-    id: 3,
-    projectName: "Construcción de Viviendas",
-    description: "Albañiles para construcción",
-    quantity: "5 personas x 3 días",
-    organizerONG: "Techo para Todos",
-    createdDate: "2025-10-05",
-    endDate: "2025-10-25",
-    status: "pendiente"
-  },
-  {
-    id: 4,
-    projectName: "Huertas Comunitarias",
-    description: "Semillas y herramientas de jardinería",
-    quantity: "100 paquetes de semillas",
-    organizerONG: "Verde Urbano",
-    createdDate: "2025-10-08",
-    endDate: "2025-11-01",
-    status: "pendiente"
-  },
-  {
-    id: 5,
-    projectName: "Centro de Salud Comunitario",
-    description: "Medicamentos básicos",
-    quantity: "$30,000",
-    organizerONG: "Salud Comunitaria",
-    createdDate: "2025-10-10",
-    endDate: "2025-10-31",
-    status: "comprometido",
-    committedBy: "Farmacia Social",
-    commitDate: "2025-10-12"
-  },
-  {
-    id: 6,
-    projectName: "Biblioteca Móvil",
-    description: "Libros infantiles y juveniles",
-    quantity: "200 libros",
-    organizerONG: "Lectura para Todos",
-    createdDate: "2025-10-12",
-    endDate: "2025-11-20",
-    status: "pendiente"
-  },
-  {
-    id: 7,
-    projectName: "Comedor Comunitario",
-    description: "Cocineros voluntarios",
-    quantity: "3 personas x 5 días",
-    organizerONG: "Alimentación Solidaria",
-    createdDate: "2025-10-13",
-    endDate: "2025-10-28",
-    status: "pendiente"
-  },
-  {
-    id: 8,
-    projectName: "Taller de Capacitación",
-    description: "Computadoras para capacitación",
-    quantity: "10 equipos",
-    organizerONG: "Capacitación Digital",
-    createdDate: "2025-10-14",
-    endDate: "2025-11-10",
-    status: "cumplido",
-    committedBy: "Tech para Todos",
-    commitDate: "2025-10-15"
-  }
-];
 
 const CollaborationRequestsView: React.FC = () => {
-  const [requests, setRequests] = useState<CollaborationRequest[]>(mockRequests);
+  const [requests, setRequests] = useState<CollaborationRequest[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('todos');
-  const [selectedRequest, setSelectedRequest] = useState<CollaborationRequest | null>(null);
-  const [showCommitModal, setShowCommitModal] = useState(false);
-  const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
-  
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ongInfoData, setOngInfoData] = useState<Ong[]>([]);
+
   const itemsPerPage = 5;
+
+  // Convertir datos de API a formato de tabla
+  const transformProjectsToRequests = (projects: ShowProject[]): CollaborationRequest[] => {
+    const requests: CollaborationRequest[] = [];
+    
+    projects.forEach(project => {
+      project.tasks.forEach((task, taskIndex) => {
+        requests.push({
+          id: `${project.id}-${taskIndex}` as any,
+          projectName: project.name,
+          description: task.necessity,
+          quantity: task.quantity,
+          organizerONG: project.owner_id.toString(),
+          createdDate: project.start_date,
+          endDate: task.end_date,
+          status: mapProjectStatusToRequestStatus(project.status)
+        });
+      });
+    });
+    
+    return requests;
+  };
+
+  // Mapear estado del proyecto al estado del request
+  const mapProjectStatusToRequestStatus = (status: string): 'activo' | 'completado' => {
+    switch(status) {
+      case 'active':
+        return 'activo';
+      case 'completed':
+        return 'completado';
+      default:
+        return 'activo';
+    }
+  };
+
+  // Cargar datos desde la API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        const [projectsData, ongsData] = await Promise.all([
+          api.getProjects(),
+          api.getOngs()
+        ]);
+        
+        console.log('Fetched projects:', projectsData);
+        console.log('Fetched ONGs:', ongsData);
+        
+        const transformedRequests = transformProjectsToRequests(projectsData);
+        setRequests(transformedRequests);
+        setOngInfoData(ongsData);
+        
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Error desconocido');
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Color según estado
   const getStatusBadge = (status: string) => {
     const styles = {
-      pendiente: "bg-yellow-100 text-yellow-800",
-      comprometido: "bg-blue-100 text-blue-800",
-      cumplido: "bg-green-100 text-green-800"
+      activo: "bg-blue-100 text-blue-800",
+      completado: "bg-green-100 text-green-800"
     };
     const labels = {
-      pendiente: "Pendiente",
-      comprometido: "Comprometido",
-      cumplido: "Cumplido"
+      activo: "Activo",
+      completado: "Completado"
     };
     return (
       <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status as keyof typeof styles]}`}>
@@ -168,39 +117,44 @@ const CollaborationRequestsView: React.FC = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentRequests = filteredRequests.slice(startIndex, endIndex);
 
-  // Comprometer ayuda
-  const handleCommit = (request: CollaborationRequest) => {
-    setSelectedRequest(request);
-    setShowCommitModal(true);
+  // Obtener nombre de ONG por ID
+  const getONGName = (ongId: string): string => {
+    const org = ongInfoData.find(o => o.id === Number(ongId));
+    return org ? org.name : `ONG #${ongId}`;
   };
 
-  const confirmCommit = () => {
-    if (selectedRequest && selectedOrgId) {
-      const selectedOrg = userOrganizations.find(org => org.id === selectedOrgId);
-      if (selectedOrg) {
-        setRequests(requests.map(req => 
-          req.id === selectedRequest.id 
-            ? { 
-                ...req, 
-                status: 'comprometido', 
-                committedBy: selectedOrg.name,
-                commitDate: new Date().toISOString().split('T')[0]
-              }
-            : req
-        ));
-        setShowCommitModal(false);
-        setSelectedOrgId(null);
-        setSelectedRequest(null);
-      }
-    }
-  };
+  // Mostrar loading
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="text-6xl mb-4">⏳</div>
+          <div className="text-xl text-violet-600 font-semibold">Cargando pedidos...</div>
+        </div>
+      </div>
+    );
+  }
 
-  // Marcar como cumplido
-  const markAsFulfilled = (id: number) => {
-    setRequests(requests.map(req => 
-      req.id === id ? { ...req, status: 'cumplido' } : req
-    ));
-  };
+  // Mostrar error
+  if (error) {
+    return (
+      <div className="max-w-2xl mx-auto mt-8">
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
+          <div className="flex items-center mb-2">
+            <span className="text-2xl mr-2">⚠️</span>
+            <h3 className="font-bold">Error al cargar los pedidos</h3>
+          </div>
+          <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -236,9 +190,8 @@ const CollaborationRequestsView: React.FC = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             >
               <option value="todos">Todos los estados</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="comprometido">Comprometido</option>
-              <option value="cumplido">Cumplido</option>
+              <option value="activo">Activo</option>
+              <option value="completado">Completado</option>
             </select>
           </div>
         </div>
@@ -255,8 +208,7 @@ const CollaborationRequestsView: React.FC = () => {
                 <th className="px-6 py-4 text-left text-sm font-semibold">Cantidad</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">ONG Organizadora</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Fecha Término</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Estado</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Acciones</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">Estado del proyecto</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -273,38 +225,13 @@ const CollaborationRequestsView: React.FC = () => {
                     <span className="font-medium text-gray-900">{request.quantity}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-violet-700">{request.organizerONG}</span>
+                    <span className="text-sm font-medium text-violet-700">{getONGName(request.organizerONG)}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-700">{request.endDate}</span>
                   </td>
                   <td className="px-6 py-4">
                     {getStatusBadge(request.status)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      {request.status === 'pendiente' && (
-                        <button
-                          onClick={() => handleCommit(request)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-                        >
-                          🤝 Comprometer
-                        </button>
-                      )}
-                      {request.status === 'comprometido' && (
-                        <button
-                          onClick={() => markAsFulfilled(request.id)}
-                          className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors shadow-md hover:shadow-lg"
-                        >
-                          ✅ Cumplido
-                        </button>
-                      )}
-                      {request.status === 'cumplido' && (
-                        <span className="px-4 py-2 text-green-600 text-sm font-medium">
-                          ✓ Completado
-                        </span>
-                      )}
-                    </div>
                   </td>
                 </tr>
               ))}
@@ -355,69 +282,10 @@ const CollaborationRequestsView: React.FC = () => {
         )}
       </div>
 
-      {/* Modal para Comprometer Ayuda */}
-      {showCommitModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">
-              🤝 Comprometer Ayuda
-            </h3>
-            <div className="mb-6">
-              <div className="bg-violet-50 rounded-lg p-4 mb-4">
-                <p className="text-sm font-semibold text-violet-900 mb-1">Proyecto:</p>
-                <p className="text-gray-700">{selectedRequest.projectName}</p>
-                <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Pedido:</p>
-                <p className="text-gray-700">{selectedRequest.description}</p>
-                <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Cantidad:</p>
-                <p className="text-gray-700">{selectedRequest.quantity}</p>
-                <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Fecha Término:</p>
-                <p className="text-gray-700">{selectedRequest.endDate}</p>
-              </div>
-              
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Selecciona tu Organización *
-              </label>
-              <select
-                value={selectedOrgId || ''}
-                onChange={(e) => setSelectedOrgId(Number(e.target.value))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
-              >
-                <option value="">-- Selecciona una organización --</option>
-                {userOrganizations.map(org => (
-                  <option key={org.id} value={org.id}>
-                    {org.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={confirmCommit}
-                disabled={!selectedOrgId}
-                className="flex-1 px-6 py-3 bg-violet-600 text-white rounded-lg font-semibold hover:bg-violet-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Confirmar Compromiso
-              </button>
-              <button
-                onClick={() => {
-                  setShowCommitModal(false);
-                  setSelectedOrgId(null);
-                  setSelectedRequest(null);
-                }}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Mensaje si no hay resultados */}
       {currentRequests.length === 0 && (
         <div className="bg-white rounded-2xl shadow-xl p-12 text-center mt-8">
-          <div className="text-6xl mb-4">🔍</div>
+          <div className="text-6xl mb-4">🔭</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
             No se encontraron pedidos
           </h3>

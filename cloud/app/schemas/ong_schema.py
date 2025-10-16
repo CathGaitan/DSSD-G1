@@ -4,7 +4,6 @@ from pydantic import BaseModel, field_validator
 class OngBase(BaseModel):
     name: str
 
-
     model_config = {
         "from_attributes": True
     }

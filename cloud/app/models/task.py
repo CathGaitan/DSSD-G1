@@ -13,7 +13,7 @@ class Task(Base):
     necessity = Column(Text, nullable=False)
     quantity = Column(String(100), nullable=False)
     resolves_by_itself = Column(Boolean, nullable=False)
-    ong_that_solves = Column(Integer, nullable=True)
+    ong_that_solves = Column(Integer, ForeignKey("ongs.id"), nullable=True)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
 
     project = relationship("Project", back_populates="tasks")

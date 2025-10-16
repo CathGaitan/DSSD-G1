@@ -43,10 +43,7 @@ class UserCreate(UserBase):
             raise ValueError("La contraseña debe incluir al menos un carácter especial.")
         return v
 
+
 class UserResponse(UserBase):
     id: int
     ongs: Optional[List[OngResponse]] = []  # para mostrar a qué ONGs pertenece el usuario
-
-    class Config:
-        orm_mode = True  # para convertir desde objetos ORM (SQLAlchemy)
-    
