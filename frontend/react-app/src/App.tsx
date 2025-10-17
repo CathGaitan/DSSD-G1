@@ -5,6 +5,7 @@ import Layout from './components/Layout'
 import CreateProjectForm from './forms/CreateProjectForm'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import RegisterForm from './forms/RegisterForm';
+import LoginForm from './forms/LoginForm';
 
 function App() {
   return (
@@ -14,7 +15,12 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/create-project" element={<CreateProjectForm />} />
           <Route path="/register" element={<RegisterForm />} />
-          {/* <Route path="/login" element={<LoginForm />} /> */}
+          <Route path="/login" element={<LoginForm onLoginSuccess={(token) => {
+            localStorage.setItem("token", token);
+            window.location.href = "/";
+          }} onRegister={() => {
+            window.location.href = "/register";
+          }} />} />
           {/* <Route path="/projects" element={<Projects />} /> */}
         </Routes>
       </Layout>
