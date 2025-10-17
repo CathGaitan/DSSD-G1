@@ -274,7 +274,7 @@ const CollaborationRequestsView: React.FC = () => {
                           onClick={() => handleCommit(request)}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
                         >
-                          🤝 Comprometer
+                          Comprometer
                         </button>
                       )}
                       {request.committedBy && (

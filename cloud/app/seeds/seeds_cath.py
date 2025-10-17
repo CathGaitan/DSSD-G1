@@ -121,7 +121,7 @@ def seed_projects(db: Session):
             "start_date": today + timedelta(days=7),
             "end_date": today + timedelta(days=180),
             "owner_id": ongs[2].id,
-            "status": "planning"
+            "status": "completed"
         },
         {
             "name": "Centro Comunitario",
