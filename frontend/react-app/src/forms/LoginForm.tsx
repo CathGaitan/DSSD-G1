@@ -1,50 +1,105 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // 👈 importamos esto
+import { InputField } from '../components/ui/InputField';
+import { Button } from '../components/ui/Button';
 
 interface LoginFormProps {
-    onSubmit: (credentials: { email: string; password: string }) => void;
-    loading?: boolean;
-    error?: string;
+    onLoginSuccess: (token: string) => void;
+    onRegister: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, loading = false, error }) => {
-    const [email, setEmail] = useState('');
+const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onRegister }) => {
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate(); // 👈 inicializamos
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit({ email, password });
+        setLoading(true);
+        setError(null);
+
+        try {
+            const formData = new URLSearchParams();
+            formData.append("grant_type", "password");
+            formData.append("username", username);
+            formData.append("password", password);
+
+            const response = await fetch("http://localhost:8000/auth/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                body: formData.toString(),
+            });
+
+            if (!response.ok) {
+                throw new Error("Credenciales inválidas");
+            }
+
+            const data = await response.json();
+
+            if (data.access_token) {
+                localStorage.setItem("token", data.access_token);
+                localStorage.setItem("username", username);
+                onLoginSuccess(data.access_token);
+                navigate("/"); // 👈 redirige al home
+            } else {
+                setError("No se recibió token del servidor");
+            }
+        } catch (err: any) {
+            setError(err.message || "Error al iniciar sesión");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ maxWidth: 400, margin: '0 auto' }}>
-            <h2>Login</h2>
-            {error && <div style={{ color: 'red', marginBottom: 8 }}>{error}</div>}
-            <div style={{ marginBottom: 12 }}>
-                <label htmlFor="email">Email</label>
-                <input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
+        <div className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8 mt-12">
+            <h2 className="text-2xl font-semibold text-center mb-6 text-gray-800">Iniciar sesión</h2>
+            <form onSubmit={handleSubmit}>
+                <InputField
+                    label="Usuario"
+                    name="Usuario"
+                    type="text"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
                     required
-                    style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+                    disabled={loading}
                 />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-                <label htmlFor="password">Password</label>
-                <input
-                    id="password"
+                <InputField
+                    label="Contraseña"
+                    name="Contraseña"
                     type="password"
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
-                    style={{ width: '100%', padding: 8, boxSizing: 'border-box' }}
+                    disabled={loading}
                 />
-            </div>
-            <button type="submit" disabled={loading} style={{ width: '100%', padding: 10 }}>
-                {loading ? 'Logging in...' : 'Login'}
-            </button>
-        </form>
+                {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                <div className="mt-6 flex flex-col items-center">
+                    <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-blue-600 text-white hover:bg-blue-700 py-2 rounded-lg transition-colors"
+                    >
+                        {loading ? 'Iniciando sesión...' : 'Ingresar'}
+                    </Button>
+                    <p className="mt-4 text-gray-600 text-sm">
+                        ¿No tienes cuenta?{' '}
+                        <button
+                            type="button"
+                            onClick={onRegister}
+                            className="text-blue-600 hover:underline font-medium"
+                            disabled={loading}
+                        >
+                            Regístrate aquí
+                        </button>
+                    </p>
+                </div>
+            </form>
+        </div>
     );
 };
 
