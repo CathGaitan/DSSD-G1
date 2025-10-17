@@ -9,10 +9,11 @@ const Header: React.FC = () => {
   const isAuthenticated = !!localStorage.getItem("token");
 
   const navItems = [
-    { path: "/login", label: "Login", icon: "" },
     { path: "/register", label: "Registrarse", icon: "" },
-    { path: "/create-project", label: "Crear Proyecto", icon: "" },
     { path: "/projects", label: "Ver Proyectos", icon: "" },
+    { path: '/login', label: 'Login', icon: '' },
+    { path: '/create-project', label: 'Crear Proyecto', icon: '' },
+    { path: '/collaboration-requests', label: 'Ver Pedidos', icon: '' },
   ];
 
   // Filtramos los botones que no deben mostrarse según la ruta actual

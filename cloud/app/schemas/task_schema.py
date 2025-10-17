@@ -45,3 +45,8 @@ class TaskCreate(TaskBase):
 
 class TaskResponse(TaskBase):
     id: int
+
+
+class CommitRequest(BaseModel):
+    task_id: int
+    ong_id: int
