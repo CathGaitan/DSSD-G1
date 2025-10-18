@@ -11,6 +11,7 @@ interface TasksFormProps {
     necessity: string;
     start_date: string;
     end_date: string;
+    quantity: string;
   }>;
   onSubmit: (e: React.FormEvent) => void;
   onBack: () => void;

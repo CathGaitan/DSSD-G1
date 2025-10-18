@@ -25,15 +25,16 @@ const CreateProjectForm: React.FC = () => {
     owner_id: '',
   });
   const [tasks, setTasks] = useState<Task[]>([
-    { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false },
+    { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' },
   ]);
   const [tasksErrors, setTasksErrors] = useState<Array<{
     title: string;
     necessity: string;
     start_date: string;
     end_date: string;
+    quantity: string;
   }>>([
-    { title: '', necessity: '', start_date: '', end_date: '' },
+    { title: '', necessity: '', start_date: '', end_date: '', quantity: '' },
   ]);
   const [loading, setLoading] = useState(false);
   
@@ -172,6 +173,11 @@ const CreateProjectForm: React.FC = () => {
           error = 'La fecha de finalización es obligatoria';
         }
         break;
+      case 'quantity':
+        if (!value.trim()) {
+          error = 'La cantidad es obligatoria';
+        }
+        break;
     }
     
     const newTasksErrors = [...tasksErrors];
@@ -187,6 +193,7 @@ const CreateProjectForm: React.FC = () => {
       necessity: string;
       start_date: string;
       end_date: string;
+      quantity: string;
     }> = [];
     let isValid = true;
 
@@ -196,6 +203,7 @@ const CreateProjectForm: React.FC = () => {
         necessity: '',
         start_date: '',
         end_date: '',
+        quantity: '',
       };
 
       if (!task.title.trim()) {
@@ -221,6 +229,11 @@ const CreateProjectForm: React.FC = () => {
 
       if (!task.end_date) {
         taskError.end_date = 'La fecha de finalización es obligatoria';
+        isValid = false;
+      }
+
+      if (!task.quantity.trim()) {
+        taskError.quantity = 'La cantidad es obligatoria';
         isValid = false;
       }
 
@@ -291,8 +304,8 @@ const CreateProjectForm: React.FC = () => {
   };
 
   const addTask = () => {
-    setTasks([...tasks, { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false }]);
-    setTasksErrors([...tasksErrors, { title: '', necessity: '', start_date: '', end_date: '' }]);
+    setTasks([...tasks, { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' }]);
+    setTasksErrors([...tasksErrors, { title: '', necessity: '', start_date: '', end_date: '', quantity: '' }]);
   };
 
   const removeTask = (index: number) => {
@@ -336,8 +349,8 @@ const CreateProjectForm: React.FC = () => {
 
       // Reset
       setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: '', status: 'active' });
-      setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false }]);
-      setTasksErrors([{ title: '', necessity: '', start_date: '', end_date: '' }]);
+      setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' }]);
+      setTasksErrors([{ title: '', necessity: '', start_date: '', end_date: '', quantity: '' }]);
       setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
       setStep(1);
     } catch (error) {

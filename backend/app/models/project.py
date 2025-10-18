@@ -12,6 +12,7 @@ class Project(Base):
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     owner_id = Column(Integer, ForeignKey("ongs.id"), nullable=False)
-    ong_responsable = relationship("Ong", back_populates="project_ong")
     status = Column(String(50), nullable=False, default="active")
+
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
+    ong_responsable = relationship("Ong", back_populates="project_ong")
