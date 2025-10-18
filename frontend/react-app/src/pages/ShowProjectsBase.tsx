@@ -16,7 +16,22 @@ interface CollaborationRequest {
   commitDate?: string;
 }
 
-const CollaborationRequestsView: React.FC = () => {
+interface ShowProjectsBaseProps {
+  // Configuración del comportamiento
+  fetchProjects: () => Promise<ShowProject[]>;
+  showCommitActions?: boolean;
+  showOrganizerColumn?: boolean;
+  title?: string;
+  subtitle?: string;
+}
+
+const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
+  fetchProjects,
+  showCommitActions = false,
+  showOrganizerColumn = true,
+  title = '📋 Pedidos de Colaboración',
+  subtitle = 'Gestiona y responde a las necesidades de los proyectos comunitarios'
+}) => {
   const [requests, setRequests] = useState<CollaborationRequest[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('todos');
@@ -34,20 +49,23 @@ const CollaborationRequestsView: React.FC = () => {
     const requests: CollaborationRequest[] = [];
     
     projects.forEach(project => {
-      project.tasks.forEach((task, taskIndex) => {
-        requests.push({
-          id: `${project.id}-${taskIndex}` as any,
-          projectName: project.name,
-          description: task.necessity,
-          quantity: task.quantity,
-          organizerONG: project.owner_id.toString(),
-          createdDate: project.start_date,
-          endDate: task.end_date,
-          status: mapProjectStatusToRequestStatus(project.status),
-          committedBy: undefined,
-          commitDate: undefined
+      // Validar que tasks exista y sea un array
+      if (project.tasks && Array.isArray(project.tasks)) {
+        project.tasks.forEach((task, taskIndex) => {
+          requests.push({
+            id: `${project.id}-${taskIndex}` as any,
+            projectName: project.name,
+            description: task.necessity,
+            quantity: task.quantity,
+            organizerONG: project.owner_id.toString(),
+            createdDate: project.start_date,
+            endDate: task.end_date,
+            status: mapProjectStatusToRequestStatus(project.status),
+            committedBy: undefined,
+            commitDate: undefined
+          });
         });
-      });
+      }
     });
     
     return requests;
@@ -71,10 +89,14 @@ const CollaborationRequestsView: React.FC = () => {
       try {
         setLoading(true);
         
+        const projectsPromise = fetchProjects();
+        const ongsPromise = (showCommitActions || showOrganizerColumn) ? api.getOngs() : Promise.resolve([]);
+        
         const [projectsData, ongsData] = await Promise.all([
-          api.getProjects(),
-          api.getOngs()
+          projectsPromise,
+          ongsPromise
         ]);
+        
         const transformedRequests = transformProjectsToRequests(projectsData);
         setRequests(transformedRequests);
         setOngInfoData(ongsData);
@@ -89,7 +111,7 @@ const CollaborationRequestsView: React.FC = () => {
     };
 
     fetchData();
-  }, []);
+  }, [fetchProjects, showCommitActions, showOrganizerColumn]);
 
   // Color según estado
   const getStatusBadge = (status: string) => {
@@ -129,17 +151,14 @@ const CollaborationRequestsView: React.FC = () => {
   const confirmCommit = async () => {
     if (selectedRequest && selectedOrgId) {
       try {
-        // Hacer POST al backend para guardar la relación
-        const taskId = selectedRequest.id.split('-')[0];
+        const taskId = selectedRequest.id.toString().split('-')[0];
         await api.commitTaskToOng(Number(taskId), selectedOrgId);
         
-        // Cerrar modal y limpiar estado
         setShowCommitModal(false);
         setSelectedOrgId(null);
         setSelectedRequest(null);
         
-        // Recargar los datos desde la API para reflejar los cambios
-        const projectsData = await api.getProjects();
+        const projectsData = await fetchProjects();
         const transformedRequests = transformProjectsToRequests(projectsData);
         setRequests(transformedRequests);
         
@@ -196,10 +215,10 @@ const CollaborationRequestsView: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              📋 Pedidos de Colaboración
+              {title}
             </h1>
             <p className="text-lg text-gray-600">
-              Gestiona y responde a las necesidades de los proyectos comunitarios
+              {subtitle}
             </p>
           </div>
           <div className="text-right">
@@ -239,10 +258,14 @@ const CollaborationRequestsView: React.FC = () => {
                 <th className="px-6 py-4 text-left text-sm font-semibold">Proyecto</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Descripción</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Cantidad</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">ONG Organizadora</th>
+                {showOrganizerColumn && (
+                  <th className="px-6 py-4 text-left text-sm font-semibold">ONG Organizadora</th>
+                )}
                 <th className="px-6 py-4 text-left text-sm font-semibold">Fecha Término</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Estado del proyecto</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Acciones</th>
+                {showCommitActions && (
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Acciones</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -258,32 +281,36 @@ const CollaborationRequestsView: React.FC = () => {
                   <td className="px-6 py-4">
                     <span className="font-medium text-gray-900">{request.quantity}</span>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-medium text-violet-700">{getONGName(request.organizerONG)}</span>
-                  </td>
+                  {showOrganizerColumn && (
+                    <td className="px-6 py-4">
+                      <span className="text-sm font-medium text-violet-700">{getONGName(request.organizerONG)}</span>
+                    </td>
+                  )}
                   <td className="px-6 py-4">
                     <span className="text-sm text-gray-700">{request.endDate}</span>
                   </td>
                   <td className="px-6 py-4">
                     {getStatusBadge(request.status)}
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      {!request.committedBy && (
-                        <button
-                          onClick={() => handleCommit(request)}
-                          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-                        >
-                          Comprometer
-                        </button>
-                      )}
-                      {request.committedBy && (
-                        <span className="px-4 py-2 text-blue-600 text-sm font-medium">
-                          ✓ Comprometido por {request.committedBy}
-                        </span>
-                      )}
-                    </div>
-                  </td>
+                  {showCommitActions && (
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        {!request.committedBy && (
+                          <button
+                            onClick={() => handleCommit(request)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
+                          >
+                            Comprometer
+                          </button>
+                        )}
+                        {request.committedBy && (
+                          <span className="px-4 py-2 text-blue-600 text-sm font-medium">
+                            ✓ Comprometido por {request.committedBy}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -334,7 +361,7 @@ const CollaborationRequestsView: React.FC = () => {
       </div>
 
       {/* Modal para Comprometer Ayuda */}
-      {showCommitModal && selectedRequest && (
+      {showCommitActions && showCommitModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
@@ -408,4 +435,4 @@ const CollaborationRequestsView: React.FC = () => {
   );
 };
 
-export default CollaborationRequestsView;
+export default ShowProjectsBase;

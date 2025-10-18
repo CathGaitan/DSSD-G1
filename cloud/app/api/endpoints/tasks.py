@@ -9,7 +9,6 @@ router = APIRouter()
 
 @router.post("/task_compromise")
 async def commit_task_to_ong(commit_data: CommitRequest, db: Session = Depends(get_db)):
-    print(f"Datos recibidos: {commit_data}")  # Debug
     task_repo = TaskRepository(db)
     try:
         result = task_repo.commit_task_to_ong(commit_data.task_id, commit_data.ong_id)
