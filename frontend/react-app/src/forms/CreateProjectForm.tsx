@@ -330,29 +330,34 @@ const CreateProjectForm: React.FC = () => {
     try {
       setLoading(true);
       // Convertir owner_id a int antes de enviar
-      const payload = { ...formData, owner_id: parseInt(formData.owner_id as string, 10), tasks };
-      console.log(JSON.stringify(payload));
+      const selectedOng = ongs.find(ong => ong.id === parseInt(formData.owner_id as string, 10));
+      const ongName = selectedOng ? selectedOng.name : '';
+
+      const payload = { 
+        ...formData, 
+        owner_id: parseInt(formData.owner_id as string, 10),
+        owner_name: ongName,
+        tasks 
+      };
+      console.log(payload)
       const response = await fetch('http://localhost:8000/projects/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-
-      console.log(response);
       if (!response.ok) {
         throw new Error(`Error ${response.status}: No se pudo crear el proyecto`);
       }
 
       const data = await response.json();
       showAlert('success', 'Proyecto y tareas creados con éxito!');
-      console.log('Proyecto creado:', data);
 
-      // Reset
-      setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: '', status: 'active' });
-      setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' }]);
-      setTasksErrors([{ title: '', necessity: '', start_date: '', end_date: '', quantity: '' }]);
-      setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
-      setStep(1);
+      // // Reset
+      // setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: '', status: 'active' });
+      // setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' }]);
+      // setTasksErrors([{ title: '', necessity: '', start_date: '', end_date: '', quantity: '' }]);
+      // setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
+      // setStep(1);
     } catch (error) {
       console.error('Error creando el proyecto:', error);
       showAlert('error', 'Hubo un error al crear el proyecto.');

@@ -48,6 +48,7 @@ class ProjectBase(BaseModel):
 
 class ProjectCreate(ProjectBase):
     tasks: List[TaskBase]
+    owner_name: str
 
     @field_validator("tasks")
     def validate_tasks(cls, v):

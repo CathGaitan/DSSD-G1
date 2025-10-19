@@ -5,5 +5,4 @@ export interface Task {
   start_date: string;
   end_date: string;
   resolves_by_itself: boolean;
-  ong_that_solves: number;
 }

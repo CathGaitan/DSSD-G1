@@ -20,5 +20,6 @@ class OngBase(BaseModel):
 class OngCreate(OngBase):
     pass
 
+
 class OngResponse(OngBase):
     id: int

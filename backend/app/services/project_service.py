@@ -21,7 +21,7 @@ class ProjectService:
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         try:
-            project_dict = project_data.model_dump(exclude={"tasks"})
+            project_dict = project_data.model_dump(exclude={"tasks", "owner_name"})
             project = self.project_repo.create(project_dict)
 
             local_tasks, cloud_tasks = self.task_service.process_tasks(project_data.tasks, project.id, project_data.owner_id)
@@ -47,7 +47,9 @@ class ProjectService:
                 "task_title": task["title"],
                 "task_necessity": task["necessity"],
                 "task_start_date": task["start_date"].strftime("%Y-%m-%d"),
-                "task_resolves_by_itself": task["resolves_by_itself"]
+                "task_end_date": task["end_date"].strftime("%Y-%m-%d"),
+                "task_resolves_by_itself": task["resolves_by_itself"],
+                "task_quantity": task["quantity"]
             }
             for task in cloud_tasks
         ]
@@ -57,6 +59,9 @@ class ProjectService:
                 "project_name": project_data.name,
                 "project_description": project_data.description,
                 "project_start_date": project_data.start_date.strftime("%Y-%m-%d"),
-                "project_tasks": tasks_bonita
+                "project_tasks": tasks_bonita,
+                "project_end_date": project_data.end_date.strftime("%Y-%m-%d"),
+                "project_status": project_data.status,
+                "project_owner": project_data.owner_name
             }
         })

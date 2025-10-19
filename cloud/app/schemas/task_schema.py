@@ -23,14 +23,6 @@ class TaskBase(BaseModel):
             raise ValueError("El título de la tarea debe tener al menos 5 caracteres.")
         return v
 
-    # @field_validator("necessity")
-    # def validate_necessity(cls, v):
-    #     if not v.strip():
-    #         raise ValueError("La necesidad de la tarea no puede estar vacía.")
-    #     if len(v) < 10:
-    #         raise ValueError("La necesidad de la tarea debe tener al menos 10 caracteres.")
-    #     return v
-
     @model_validator(mode="after")
     def validate_dates(self):
         if self.end_date < self.start_date:
