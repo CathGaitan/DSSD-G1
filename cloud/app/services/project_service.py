@@ -14,7 +14,7 @@ class ProjectService:
     def get_projects(self) -> list[ProjectResponse]:
         return self.project_repo.get_all()
 
-    def store_projects(self, project_data) -> ProjectResponse:
+    def store_projects(self, project_data: ProjectCreate) -> ProjectResponse:
         print("Storing project data:", project_data)
         try:
             project_dict = project_data.model_dump(exclude={"tasks"})

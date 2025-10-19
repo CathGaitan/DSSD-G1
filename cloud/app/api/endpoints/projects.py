@@ -15,6 +15,6 @@ def get_projects(db: Session = Depends(get_db)):
 
 
 @router.post("/store_projects", response_model=ProjectResponse)
-def store_projects(project, db: Session = Depends(get_db)):
+def store_projects(project: ProjectCreate, db: Session = Depends(get_db)):
     service = ProjectService(db)
     return service.store_projects(project)

@@ -353,11 +353,11 @@ const CreateProjectForm: React.FC = () => {
       showAlert('success', 'Proyecto y tareas creados con éxito!');
 
       // // Reset
-      // setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: '', status: 'active' });
-      // setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' }]);
-      // setTasksErrors([{ title: '', necessity: '', start_date: '', end_date: '', quantity: '' }]);
-      // setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
-      // setStep(1);
+      setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: '', status: 'active' });
+      setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' }]);
+      setTasksErrors([{ title: '', necessity: '', start_date: '', end_date: '', quantity: '' }]);
+      setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
+      setStep(1);
     } catch (error) {
       console.error('Error creando el proyecto:', error);
       showAlert('error', 'Hubo un error al crear el proyecto.');
