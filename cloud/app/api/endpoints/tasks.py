@@ -1,5 +1,7 @@
 from app.repositories.task_repository import TaskRepository
 from app.schemas.task_schema import CommitRequest
+from backend.app.schemas.user_schema import UserResponse
+from backend.app.services.auth_service import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -8,7 +10,7 @@ router = APIRouter()
 
 
 @router.post("/task_compromise")
-async def commit_task_to_ong(commit_data: CommitRequest, db: Session = Depends(get_db)):
+async def commit_task_to_ong(commit_data: CommitRequest, db: Session = Depends(get_db), current_user: UserResponse=Depends(get_current_user)):
     print(f"Datos recibidos: {commit_data}")  # Debug
     task_repo = TaskRepository(db)
     try:
