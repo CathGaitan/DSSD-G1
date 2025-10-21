@@ -10,7 +10,6 @@ const Header: React.FC = () => {
 
   const navItems = [
     { path: "/register", label: "Registrarse", icon: "" },
-    { path: "/projects", label: "Ver Proyectos", icon: "" },
     { path: '/login', label: 'Login', icon: '' },
     { path: '/create-project', label: 'Crear Proyecto', icon: '' },
     { path: '/cloud-projects', label: 'Ver pedidos colaboracion', icon: '' },
