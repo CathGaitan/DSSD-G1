@@ -5,7 +5,8 @@ import CreateProjectForm from './forms/CreateProjectForm'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import RegisterForm from './forms/RegisterForm';
 import LoginForm from './forms/LoginForm';
-import CollaborationRequests from './pages/CollaborationRequests';
+import ShowProjectsCloud from './pages/ShowProjectsCloud';
+import ShowProjectsLocal from './pages/ShowProjectsLocal';
 
 function App() {
   return (
@@ -23,7 +24,8 @@ function App() {
           }} />} />
           {/* <Route path="/projects" element={<Projects />} /> */}
           {/* <Route path="/login" element={<LoginForm />} /> */}
-          <Route path="/collaboration-requests" element={<CollaborationRequests />} />
+          <Route path="/cloud-projects" element={<ShowProjectsCloud />} />
+          <Route path="/local-projects" element={<ShowProjectsLocal />} />
         </Routes>
       </Layout>
     </Router>
