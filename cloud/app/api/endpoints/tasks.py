@@ -1,7 +1,7 @@
 from app.repositories.task_repository import TaskRepository
 from app.schemas.task_schema import CommitRequest
-from backend.app.schemas.user_schema import UserResponse
-from backend.app.services.auth_service import get_current_user
+from app.schemas.user_schema import UserResponse
+from app.services.auth_service import get_current_user
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db

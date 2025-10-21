@@ -11,6 +11,9 @@ class ProjectService:
         self.task_service = TaskService(db)
         self.ong_repo = OngRepository(db)
 
+    def get_project(self, project_id: int) -> ProjectResponse | None:
+        return self.project_repo.get_by_id(project_id)
+
     def get_projects(self) -> list[ProjectResponse]:
         return self.project_repo.get_all()
 

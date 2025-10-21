@@ -17,12 +17,3 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
 def get_projects(db: Session = Depends(get_db)):
     service = ProjectService(db)
     return service.get_projects()
-
-
-@router.get("/{project_id}", response_model=ProjectResponse)
-def get_project(project_id: int, db: Session = Depends(get_db)):
-    service = ProjectService(db)
-    project = service.get_project(project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="No se encontro el proyecto")
-    return project

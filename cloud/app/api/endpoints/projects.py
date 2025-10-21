@@ -1,5 +1,6 @@
-from backend.app.schemas.user_schema import UserResponse
-from backend.app.services.auth_service import get_current_user
+from http.client import HTTPException
+from app.schemas.user_schema import UserResponse
+from app.services.auth_service import get_current_user
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -17,6 +18,15 @@ def get_projects(db: Session = Depends(get_db), current_user: UserResponse = Dep
 
 
 @router.post("/store_projects", response_model=ProjectResponse)
-def store_projects(project: ProjectCreate, db: Session = Depends(get_db)):
+def store_projects(project: ProjectCreate, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     service = ProjectService(db)
     return service.store_projects(project)
+
+
+@router.get("/{project_id}", response_model=ProjectResponse)
+def get_project(project_id: int, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+    service = ProjectService(db)
+    project = service.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="No se encontro el proyecto")
+    return project
