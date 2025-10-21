@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.user_ong import user_ongs
 
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -15,4 +16,3 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, username='{self.username}', email='{self.email}')>"
-

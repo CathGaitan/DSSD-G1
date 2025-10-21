@@ -1,4 +1,4 @@
-from app.schemas.task_schema import TaskCreate
+from app.schemas.task_schema import TaskBase, TaskCreate
 from pydantic import BaseModel, field_validator, constr, model_validator
 from typing import List, Optional, Annotated
 from datetime import date
@@ -9,7 +9,7 @@ class ProjectBase(BaseModel):
     description: str
     start_date: date
     end_date: date
-    owner_id: int #tuve que cambiar owner a owner_id porque estaba como string
+    owner_id: int
     status: Optional[str] = "active"
 
     model_config = {
@@ -47,7 +47,8 @@ class ProjectBase(BaseModel):
 
 
 class ProjectCreate(ProjectBase):
-    tasks: List[TaskCreate]
+    tasks: List[TaskBase]
+    owner_name: str
 
     @field_validator("tasks")
     def validate_tasks(cls, v):
@@ -55,13 +56,7 @@ class ProjectCreate(ProjectBase):
             raise ValueError("Debe incluir al menos una tarea al crear el proyecto.")
         return v
 
-    @model_validator(mode="after")
-    def set_ong_if_resolves_by_itself(self):
-        for task in self.tasks:
-            if task.resolves_by_itself:
-                task.ong_that_solves = self.owner_id
-        return self
-
 
 class ProjectResponse(ProjectBase):
     id: int
+    tasks: List[TaskCreate]

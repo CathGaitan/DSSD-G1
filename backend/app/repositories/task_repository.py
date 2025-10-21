@@ -1,5 +1,8 @@
 from app.models.task import Task
 from app.repositories.base_repository import BaseRepository
+from app.models.task_ong import task_ongs
+from app.schemas.task_schema import TaskCreate
+from sqlalchemy import insert
 
 
 class TaskRepository(BaseRepository):
@@ -13,3 +16,35 @@ class TaskRepository(BaseRepository):
         for task in tasks:
             self.db.refresh(task)
         return tasks
+
+    def save_tasks_with_ong(self, tasks: list, ong_id: int):
+        """
+        Crea múltiples tareas y las asocia a una misma ONG.
+        """
+        try:
+            new_tasks = []
+            for task_dict in tasks:
+                task_data = TaskCreate(**task_dict)
+                new_task = Task(
+                    title=task_data.title,
+                    necessity=task_data.necessity,
+                    quantity=task_data.quantity,
+                    start_date=task_data.start_date,
+                    end_date=task_data.end_date,
+                    resolves_by_itself=task_data.resolves_by_itself,
+                    project_id=task_data.project_id
+                )
+                self.db.add(new_task)
+                new_tasks.append(new_task)
+
+            self.db.commit()
+            [self.db.refresh(t) for t in new_tasks]
+
+            values = [{"task_id": task.id, "ong_id": ong_id} for task in new_tasks]
+            stmt = insert(task_ongs).values(values)
+            self.db.execute(stmt)
+            self.db.commit()
+            return new_tasks
+        except Exception as e:
+            self.db.rollback()
+            raise e

@@ -10,10 +10,10 @@ from app.repositories.ong_repository import OngRepository
 from app.repositories.user_ong_repository import UserOngRepository
 import logging
 
-
-
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+
 class UserService:
     def __init__(self, db: Session):
         self.user_repo = user_repo.UserRepository(db)
@@ -65,8 +65,7 @@ class UserService:
         if user and pwd_context.verify(password, user.hashed_password):
             return UserResponse.model_validate(user)
         return None
-    
-    
+
     def add_user_to_ong(self, user_id: int, ong_id: int) -> None:
         user = self.user_repo.get_by_id(user_id)
         ong = self.ong_repo.get_by_id(ong_id)
@@ -85,7 +84,7 @@ class UserService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado.")
         ongs = user.ongs  # Accede a las ONGs asociadas al usuario
         return [OngResponse.model_validate(ong) for ong in ongs]
-    
+
     def remove_user_from_ong(self, user_id: int, ong_id: int) -> None:
         user = self.user_repo.get_by_id(user_id)
         ong = self.ong_repo.get_by_id(ong_id)

@@ -20,3 +20,11 @@ class TaskRepository(BaseRepository):
         except Exception as e:
             self.db.rollback()
             raise e
+
+    def create_multiple_tasks(self, tasks_data):
+        tasks = [Task(**data) for data in tasks_data]
+        self.db.add_all(tasks)
+        self.db.commit()
+        for task in tasks:
+            self.db.refresh(task)
+        return tasks

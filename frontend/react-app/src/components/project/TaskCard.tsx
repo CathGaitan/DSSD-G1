@@ -13,6 +13,7 @@ interface TaskCardProps {
     necessity: string;
     start_date: string;
     end_date: string;
+    quantity: string;
   };
   onChange: (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onRemove: (index: number) => void;
@@ -67,6 +68,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           error={taskErrors?.necessity}
         />
 
+        <InputField
+          label="Cantidad"
+          name="quantity"
+          value={task.quantity}
+          onChange={handleChange}
+          required
+          placeholder="Ej: 5 toneladas, 10 personas, 3 días, etc."
+          error={taskErrors?.quantity}
+        />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <InputField
             label="Fecha de Inicio"
@@ -96,7 +107,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             onChange={handleChange}
             className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
           />
-          <label className="text-sm text-gray-700">¿Como ONG resolvera esta tarea por sí misma?</label>
+          <label className="text-sm text-gray-700">¿Como ONG resolverá esta tarea por sí misma?</label>
         </div>
       </div>
     </div>

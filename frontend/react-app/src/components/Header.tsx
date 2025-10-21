@@ -10,10 +10,11 @@ const Header: React.FC = () => {
 
   const navItems = [
     { path: "/register", label: "Registrarse", icon: "" },
-    { path: "/projects", label: "Ver Proyectos", icon: "" },
     { path: '/login', label: 'Login', icon: '' },
     { path: '/create-project', label: 'Crear Proyecto', icon: '' },
-    { path: '/collaboration-requests', label: 'Ver Pedidos', icon: '' },
+    { path: '/cloud-projects', label: 'Ver pedidos colaboracion', icon: '' },
+    { path: '/local-projects', label: 'Mis tareas', icon: '' },
+
   ];
 
   // Filtramos los botones que no deben mostrarse según la ruta actual

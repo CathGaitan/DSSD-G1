@@ -9,8 +9,8 @@ class ProjectBase(BaseModel):
     description: str
     start_date: date
     end_date: date
-    owner_id: int
     status: Optional[str] = "active"
+    owner_id: Optional[int] = None
 
     model_config = {
         "from_attributes": True
@@ -48,19 +48,13 @@ class ProjectBase(BaseModel):
 
 class ProjectCreate(ProjectBase):
     tasks: List[TaskCreate]
+    owner_name: str
 
     @field_validator("tasks")
     def validate_tasks(cls, v):
         if len(v) == 0:
             raise ValueError("Debe incluir al menos una tarea al crear el proyecto.")
         return v
-
-    @model_validator(mode="after")
-    def set_ong_if_resolves_by_itself(self):
-        for task in self.tasks:
-            if task.resolves_by_itself:
-                task.ong_that_solves = self.owner_id
-        return self
 
 
 class ProjectResponse(ProjectBase):
