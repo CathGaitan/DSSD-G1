@@ -10,6 +10,7 @@ class TaskBase(BaseModel):
     start_date: date
     end_date: date
     resolves_by_itself: bool
+    status: str = "pending"
 
     model_config = {
         "from_attributes": True

@@ -7,6 +7,14 @@ class TaskService:
     def __init__(self, db: Session):
         self.task_repo = TaskRepository(db)
 
+    def commit_task_to_ong(self, task_id: int, ong_id: int):
+        return self.task_repo.commit_task_to_ong(task_id, ong_id)
+
+    def select_ong_for_task(self, task_id: int, ong_id: int):
+        if not self.task_repo.has_ong_applied_for_task(task_id, ong_id):
+            raise ValueError("La ONG no se ha postulado para esta tarea.")
+        return self.task_repo.select_ong_for_task(task_id, ong_id)
+
     def process_and_save_tasks(self, tasks: list[TaskCreate], project_id: int) -> list[dict]:
         tasks_data = self._prepare_tasks_data(tasks, project_id)
         return self.task_repo.create_multiple_tasks(tasks_data)

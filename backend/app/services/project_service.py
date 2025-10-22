@@ -49,7 +49,8 @@ class ProjectService:
                 "task_start_date": task["start_date"].strftime("%Y-%m-%d"),
                 "task_end_date": task["end_date"].strftime("%Y-%m-%d"),
                 "task_resolves_by_itself": task["resolves_by_itself"],
-                "task_quantity": task["quantity"]
+                "task_quantity": task["quantity"],
+                "task_status": task["status"]
             }
             for task in cloud_tasks
         ]

@@ -5,6 +5,7 @@ from app.models.ong import Ong
 from app.models.user import User
 from app.models.project import Project
 from app.models.task import Task
+from app.models.task_ong import TaskOngAssociation
 
 
 def seed_ongs(db: Session):
@@ -219,17 +220,17 @@ def seed_tasks(db: Session):
     db.commit()
     
     # Asociar tareas con ONGs
-    tasks = db.query(Task).all()
-    if len(tasks) >= 2 and len(ongs) >= 1:
-        tasks[0].ongs.append(ongs[0])
-        tasks[1].ongs.append(ongs[0])
-        tasks[2].ongs.append(ongs[1])
-        tasks[3].ongs.append(ongs[2])
-        tasks[4].ongs.append(ongs[2])
-        tasks[5].ongs.append(ongs[3])
-        db.commit()
+    # tasks = db.query(Task).all()
+    # if len(tasks) >= 2 and len(ongs) >= 1:
+    #     tasks[0].ongs.append(ongs[0])
+    #     tasks[1].ongs.append(ongs[0])
+    #     tasks[2].ongs.append(ongs[1])
+    #     tasks[3].ongs.append(ongs[2])
+    #     tasks[4].ongs.append(ongs[2])
+    #     tasks[5].ongs.append(ongs[3])
+    #     db.commit()
     
-    return tasks
+    return None
 
 
 def run_seeds():

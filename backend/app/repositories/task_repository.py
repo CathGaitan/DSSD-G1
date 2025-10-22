@@ -1,8 +1,7 @@
 from app.models.task import Task
 from app.repositories.base_repository import BaseRepository
-from app.models.task_ong import task_ongs
 from app.schemas.task_schema import TaskCreate
-from sqlalchemy import insert
+from app.models.task_ong import TaskOngAssociation
 
 
 class TaskRepository(BaseRepository):
@@ -19,7 +18,7 @@ class TaskRepository(BaseRepository):
 
     def save_tasks_with_ong(self, tasks: list, ong_id: int):
         """
-        Crea múltiples tareas y las asocia a una misma ONG.
+        Crea múltiples tareas y las asocia a una misma ONG con status 'owner'.
         """
         try:
             new_tasks = []
@@ -39,10 +38,8 @@ class TaskRepository(BaseRepository):
 
             self.db.commit()
             [self.db.refresh(t) for t in new_tasks]
-
-            values = [{"task_id": task.id, "ong_id": ong_id} for task in new_tasks]
-            stmt = insert(task_ongs).values(values)
-            self.db.execute(stmt)
+            associations = [TaskOngAssociation(task_id=task.id, ong_id=ong_id, status="owner") for task in new_tasks]
+            self.db.add_all(associations)
             self.db.commit()
             return new_tasks
         except Exception as e:
