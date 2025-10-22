@@ -12,8 +12,8 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     service = ProjectService(db)
     return service.create_project(project)
 
-
-@router.get("/my-projects/", response_model=list[ProjectResponse])
-def get_projects(db: Session = Depends(get_db)):
-    service = ProjectService(db)
-    return service.get_projects()
+# EDITAR: Obtener proyectos asociados a un usuario específico 
+# @router.get("/my-projects/", response_model=list[ProjectResponse])
+# def get_projects(db: Session = Depends(get_db)):
+#     service = ProjectService(db)
+#     return service.get_projects()
