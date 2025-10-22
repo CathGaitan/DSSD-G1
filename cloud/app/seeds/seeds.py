@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
@@ -16,13 +17,12 @@ def seed_ongs(db: Session):
         {"name": "ONG Ambiental"},
         {"name": "Voluntarios Comunitarios"},
     ]
-    
+
     for ong_data in ongs_data:
         existing = db.query(Ong).filter(Ong.name == ong_data["name"]).first()
         if not existing:
             ong = Ong(**ong_data)
             db.add(ong)
-    
     db.commit()
     return db.query(Ong).all()
 
@@ -30,38 +30,25 @@ def seed_ongs(db: Session):
 def seed_users(db: Session):
     """Crea usuarios de prueba"""
     from passlib.context import CryptContext
-    
+    PASSWORD = os.getenv("USERS_PASSWORD")
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    
     users_data = [
         {
-            "username": "juan_admin",
-            "email": "juan@example.com",
-            "hashed_password": pwd_context.hash("password123")
+            "username": "ayudante",
+            "email": "ayudante@gmail.com",
+            "hashed_password": pwd_context.hash(PASSWORD)
         },
         {
-            "username": "maria_user",
-            "email": "maria@example.com",
-            "hashed_password": pwd_context.hash("password123")
-        },
-        {
-            "username": "carlos_dev",
-            "email": "carlos@example.com",
-            "hashed_password": pwd_context.hash("password123")
-        },
-        {
-            "username": "ana_volunteer",
-            "email": "ana@example.com",
-            "hashed_password": pwd_context.hash("password123")
-        },
+            "username": "user",
+            "email": "user@gmail.com",
+            "hashed_password": pwd_context.hash(PASSWORD)
+        }
     ]
-    
     for user_data in users_data:
         existing = db.query(User).filter(User.username == user_data["username"]).first()
         if not existing:
             user = User(**user_data)
             db.add(user)
-    
     db.commit()
     return db.query(User).all()
 
@@ -69,24 +56,15 @@ def seed_users(db: Session):
 def seed_user_ongs(db: Session):
     """Asocia usuarios con ONGs"""
     users = db.query(User).all()
-    ongs = db.query(Ong).all()
-    
+    ongs = db.query(Ong).all() 
     if len(users) >= 2 and len(ongs) >= 2:
-        # Juan con Fundación Educativa y Asociación de Salud
+        # Ayudante con Fundación Educativa y Asociación de Salud
         users[0].ongs.append(ongs[0])
         users[0].ongs.append(ongs[1])
-        
-        # Maria con ONG Ambiental
+
+        # User con ONG Ambiental
         users[1].ongs.append(ongs[2])
-        
-        # Carlos con Voluntarios Comunitarios
-        users[2].ongs.append(ongs[3])
-        
-        # Ana con todas
-        for ong in ongs:
-            if ong not in users[3].ongs:
-                users[3].ongs.append(ong)
-        
+
         db.commit()
 
 
@@ -122,7 +100,7 @@ def seed_projects(db: Session):
             "start_date": today + timedelta(days=7),
             "end_date": today + timedelta(days=180),
             "owner_id": ongs[2].id,
-            "status": "completed"
+            "status": "active"
         },
         {
             "name": "Centro Comunitario",
@@ -188,7 +166,7 @@ def seed_tasks(db: Session):
             "end_date": today + timedelta(days=21),
             "necessity": "Autorización oficial",
             "quantity": "3 documentos",
-            "resolves_by_itself": True,
+            "resolves_by_itself": False,
             "project_id": projects[2].id,
         },
         {
@@ -210,26 +188,13 @@ def seed_tasks(db: Session):
             "project_id": projects[3].id,
         },
     ]
-    
+
     for task_data in tasks_data:
         existing = db.query(Task).filter(Task.title == task_data["title"]).first()
         if not existing:
             task = Task(**task_data)
             db.add(task)
-    
     db.commit()
-    
-    # Asociar tareas con ONGs
-    # tasks = db.query(Task).all()
-    # if len(tasks) >= 2 and len(ongs) >= 1:
-    #     tasks[0].ongs.append(ongs[0])
-    #     tasks[1].ongs.append(ongs[0])
-    #     tasks[2].ongs.append(ongs[1])
-    #     tasks[3].ongs.append(ongs[2])
-    #     tasks[4].ongs.append(ongs[2])
-    #     tasks[5].ongs.append(ongs[3])
-    #     db.commit()
-    
     return None
 
 
@@ -239,24 +204,17 @@ def run_seeds():
     
     try:
         print("🌱 Iniciando seeds...")
-        
         print("  - Creando ONGs...")
         seed_ongs(db)
-        
         print("  - Creando usuarios...")
         seed_users(db)
-        
         print("  - Asociando usuarios con ONGs...")
         seed_user_ongs(db)
-        
         print("  - Creando proyectos...")
         seed_projects(db)
-        
         print("  - Creando tareas...")
         seed_tasks(db)
-        
         print("✅ Seeds ejecutados correctamente!")
-        
     except Exception as e:
         print(f"❌ Error en seeds: {str(e)}")
         db.rollback()

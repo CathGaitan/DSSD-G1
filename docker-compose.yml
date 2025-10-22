@@ -53,6 +53,7 @@ services:
       - db
     environment:
       - DATABASE_CLOUD_URL=${DATABASE_CLOUD_URL}
+      - USERS_PASSWORD=${USERS_PASSWORD}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
