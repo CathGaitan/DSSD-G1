@@ -56,11 +56,6 @@ class TaskBase(BaseModel):
             raise ValueError(f"Las tareas en cloud siempre las resuelve otra ONG")
         return v
 
-    @field_validator("status")
-    def validate_status(cls, v):
-        if v is not False:
-            raise ValueError(f"La tarea debe iniciar en estado: pending")
-        return v
 
     @model_validator(mode="after")
     def validate_dates(self):
@@ -70,7 +65,11 @@ class TaskBase(BaseModel):
 
 
 class TaskCreate(TaskBase):
-    pass
+    @field_validator("status")
+    def validate_status(cls, v):
+        if v is not False:
+            raise ValueError(f"La tarea debe iniciar en estado: pending")
+        return v
 
 
 class TaskResponse(TaskBase):
