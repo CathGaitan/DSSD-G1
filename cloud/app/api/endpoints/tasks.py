@@ -32,7 +32,7 @@ async def select_ong_for_task(commit_data: CommitRequest, db: Session = Depends(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/view_compromises")
+@router.get("/view_compromises")
 async def view_compromises(db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     service = TaskOngAssociationService(db)
     try:
