@@ -50,12 +50,12 @@ class TaskBase(BaseModel):
             raise ValueError("La fecha de finalización de la tarea no puede estar vacía.")
         return v
 
-    @field_validator("resolves_by_itself")
-    def validate_resolves_by_itself(cls, v):
-        if v:
-            raise ValueError(f"Las tareas en cloud siempre las resuelve otra ONG")
+    @field_validator("status")
+    def validate_status(cls, v):
+        allowed_status = {"pending", "active", "completed"}
+        if v not in allowed_status:
+            raise ValueError(f"El estado debe ser uno de: {', '.join(allowed_status)}")
         return v
-
 
     @model_validator(mode="after")
     def validate_dates(self):
@@ -67,8 +67,8 @@ class TaskBase(BaseModel):
 class TaskCreate(TaskBase):
     @field_validator("status")
     def validate_status(cls, v):
-        if v is not False:
-            raise ValueError(f"La tarea debe iniciar en estado: pending")
+        if v != "pending":
+            raise ValueError(f"Las tareas siempre se crean con estado pending")
         return v
 
 
