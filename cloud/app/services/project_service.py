@@ -23,6 +23,12 @@ class ProjectService:
     def get_projects(self) -> list[ProjectResponse]:
         return self.project_repo.get_all()
 
+    def get_project_by_name(self, name: str) -> ProjectResponse | None:
+        project = self.project_repo.get_project_by_name(name)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe un proyecto con nombre={name}.")
+        return project
+
     def store_projects(self, project_data: ProjectCreate) -> ProjectResponse:
         try:
             self.ong_service.verify_ong_exists(project_data.owner_id, project_data.owner_name)

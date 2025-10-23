@@ -5,3 +5,6 @@ from app.models.project import Project
 class ProjectRepository(BaseRepository):
     def __init__(self, db):
         super().__init__(db, Project)
+
+    def get_project_by_name(self, name: str):
+        return self.db.query(Project).filter(Project.name == name).first()
