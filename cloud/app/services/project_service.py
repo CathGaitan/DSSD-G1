@@ -1,5 +1,7 @@
+from fastapi import HTTPException, status
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.ong_repository import OngRepository
+from app.services.ong_service import OngService
 from sqlalchemy.orm import Session
 from app.schemas.project_schema import ProjectCreate, ProjectResponse
 from app.services.task_service import TaskService
@@ -10,16 +12,20 @@ class ProjectService:
         self.project_repo = ProjectRepository(db)
         self.task_service = TaskService(db)
         self.ong_repo = OngRepository(db)
+        self.ong_service = OngService(db)
 
     def get_project(self, project_id: int) -> ProjectResponse | None:
-        return self.project_repo.get_by_id(project_id)
+        project = self.project_repo.get_by_id(project_id)
+        if not project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe un proyecto con id={project_id}.")
+        return project
 
     def get_projects(self) -> list[ProjectResponse]:
         return self.project_repo.get_all()
 
     def store_projects(self, project_data: ProjectCreate) -> ProjectResponse:
-        print("Storing project data:", project_data)
         try:
+            self.ong_service.verify_ong_exists(project_data.owner_id, project_data.owner_name)
             project_dict = project_data.model_dump(exclude={"tasks"})
             owner_name = project_dict.pop("owner_name", None)
             ong = self.ong_repo.get_by_name(owner_name)

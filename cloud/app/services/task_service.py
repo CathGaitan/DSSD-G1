@@ -1,16 +1,28 @@
-from app.schemas.task_schema import TaskCreate
 from sqlalchemy.orm import Session
+from app.schemas.task_schema import TaskCreate
+from app.services.ong_service import OngService
 from app.repositories.task_repository import TaskRepository
+from fastapi import HTTPException, status
 
 
 class TaskService:
     def __init__(self, db: Session):
         self.task_repo = TaskRepository(db)
+        self.ong_service = OngService(db)
+
+    def verify_task_id_exists(self, task_id: int) -> None:
+        id_task = self.task_repo.get_by_id(task_id)
+        if not id_task:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe una tarea con id={task_id}.",)
 
     def commit_task_to_ong(self, task_id: int, ong_id: int):
+        self.ong_service.verify_ong_id_exists(ong_id)
+        self.verify_task_id_exists(task_id)
         return self.task_repo.commit_task_to_ong(task_id, ong_id)
 
     def select_ong_for_task(self, task_id: int, ong_id: int):
+        self.ong_service.verify_ong_id_exists(ong_id)
+        self.verify_task_id_exists(task_id)
         if not self.task_repo.has_ong_applied_for_task(task_id, ong_id):
             raise ValueError("La ONG no se ha postulado para esta tarea.")
         return self.task_repo.select_ong_for_task(task_id, ong_id)

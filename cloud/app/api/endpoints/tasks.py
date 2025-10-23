@@ -14,6 +14,8 @@ async def commit_task_to_ong(commit_data: CommitRequest, db: Session = Depends(g
     service = TaskService(db)
     try:
         return service.commit_task_to_ong(commit_data.task_id, commit_data.ong_id)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -23,5 +25,7 @@ async def select_ong_for_task(commit_data: CommitRequest, db: Session = Depends(
     service = TaskService(db)
     try:
         return service.select_ong_for_task(commit_data.task_id, commit_data.ong_id)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

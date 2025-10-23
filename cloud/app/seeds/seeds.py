@@ -32,6 +32,7 @@ def seed_users(db: Session):
     from passlib.context import CryptContext
     PASSWORD = os.getenv("USERS_PASSWORD")
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    print("Hash pass:", pwd_context.hash(PASSWORD))
     users_data = [
         {
             "username": "ayudante",
