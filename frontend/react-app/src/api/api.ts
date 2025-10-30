@@ -42,5 +42,25 @@ export const api = {
     if (!response.ok) throw new Error('Error al guardar el compromiso');
     return response.json();
   },
+
+  // POST: Login de usuario
+  login: async (username: string, password: string) => {
+    const formData = new URLSearchParams();
+    formData.append("grant_type", "password");
+    formData.append("username", username);
+    formData.append("password", password);
+
+    const response = await fetch(`${BASE_LOCAL_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData.toString(),
+    });
+
+    if (!response.ok) throw new Error("Credenciales inválidas");
+
+    return response.json(); // devuelve el token
+  },
   
 };

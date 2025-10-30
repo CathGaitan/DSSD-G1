@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // 👈 importamos esto
 import { InputField } from '../components/ui/InputField';
 import { Button } from '../components/ui/Button';
+import { api } from '../api/api';
 
 interface LoginFormProps {
     onLoginSuccess: (token: string) => void;
@@ -13,7 +14,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onRegister }) => 
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate(); // 👈 inicializamos
+    const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -21,30 +22,13 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onRegister }) => 
         setError(null);
 
         try {
-            const formData = new URLSearchParams();
-            formData.append("grant_type", "password");
-            formData.append("username", username);
-            formData.append("password", password);
-
-            const response = await fetch("http://localhost:8000/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: formData.toString(),
-            });
-
-            if (!response.ok) {
-                throw new Error("Credenciales inválidas");
-            }
-
-            const data = await response.json();
+            const data = await api.login(username, password);
 
             if (data.access_token) {
                 localStorage.setItem("token", data.access_token);
                 localStorage.setItem("username", username);
                 onLoginSuccess(data.access_token);
-                navigate("/"); // 👈 redirige al home
+                navigate("/");
             } else {
                 setError("No se recibió token del servidor");
             }
