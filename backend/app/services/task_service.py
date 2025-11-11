@@ -1,11 +1,18 @@
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.repositories.task_repository import TaskRepository
 from app.schemas.task_schema import TaskCreate
+from app.services.ong_service import OngService
+from app.bonita_integration.bonita_api import bonita
+import time
 
 
 class TaskService:
     def __init__(self, db: Session):
         self.task_repo = TaskRepository(db)
+        self.ong_service = OngService(db)
+        self.process_name = "Proceso de gestion de proyecto"
+        self.bonita = bonita
 
     def process_tasks(self, tasks: list[TaskCreate], project_id: int, owner_id: int) -> tuple[list[dict], list[dict]]:
         """
@@ -30,3 +37,36 @@ class TaskService:
             {**task.model_dump(), "project_id": project_id}
             for task in tasks
         ]
+
+    def verify_task_id_exists(self, task_id: int) -> None:
+        id_task = self.task_repo.get_by_id(task_id)
+        if not id_task:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe una tarea con id={task_id}.",)
+
+    def commit_task_to_ong(self, task_id: int, ong_id: int, project_id: int) -> None:
+        # project_id: deberia ser el mismo en cloud y en local
+        # task_id: corresponde a la task en cloud
+        from app.services.project_service import ProjectService
+        self.project_service = ProjectService(self.task_repo.db)
+        ong = self.ong_service.get_ong_by_id(ong_id)
+        case_id = self.project_service.get_project(project_id).bonita_case_id
+        try:
+            self._send_to_bonita(case_id, ong.id, task_id)
+        except Exception:
+            self.task_repo.db.rollback()
+            raise
+
+    def _send_to_bonita(self, case_id: int, ong_id: int, task_id: int) -> None:       
+        tasks = self.bonita.start_human_tasks(case_id)
+        if not tasks:
+            raise Exception(f"No hay tareas humanas disponibles para el caso {case_id}")
+        next_task_id = tasks[0]["id"]
+        print("id next task:", next_task_id)
+        time.sleep(1)
+        self.bonita.assign_task(next_task_id)
+        self.bonita.send_form_data(next_task_id, {
+            "compromiseInput": {
+                "task_id": task_id,
+                "ong_id": ong_id,
+            }
+        })

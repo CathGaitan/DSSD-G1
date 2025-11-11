@@ -13,6 +13,7 @@ class Project(Base):
     end_date = Column(Date, nullable=True)
     owner_id = Column(Integer, ForeignKey("ongs.id"), nullable=False)
     status = Column(String(50), nullable=False, default="active")
+    bonita_case_id = Column(String(100), nullable=True)
 
     tasks = relationship("Task", back_populates="project", cascade="all, delete-orphan")
     ong_responsable = relationship("Ong", back_populates="project_ong")

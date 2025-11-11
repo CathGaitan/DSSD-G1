@@ -15,24 +15,28 @@ class ProjectService:
         self.process_name = "Proceso de gestion de proyecto"
 
     def get_project(self, project_id: int) -> ProjectResponse | None:
-        return self.project_repo.get_by_id(project_id)
+        project = self.project_repo.get_by_id(project_id)
+        if not project:
+            raise Exception(f"No existe un proyecto con id={project_id}.")
+        return project
 
     def get_projects(self) -> list[ProjectResponse]:
         return self.project_repo.get_all()
 
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         try:
-            project_dict = project_data.model_dump(exclude={"tasks", "owner_name"})
+            project_dict = project_data.model_dump(exclude={"tasks"})
             project = self.project_repo.create(project_dict)
 
             local_tasks, cloud_tasks = self.task_service.process_tasks(project_data.tasks, project.id, project_data.owner_id)
-            self._send_to_bonita(project_data, cloud_tasks)
+            case_id = self._send_to_bonita(project_data, cloud_tasks)
+            self.project_repo.update(project, {"bonita_case_id": case_id})
             return project
         except Exception:
             self.project_repo.db.rollback()
             raise
 
-    def _send_to_bonita(self, project_data: ProjectCreate, cloud_tasks: list[dict]) -> None:
+    def _send_to_bonita(self, project_data: ProjectCreate, cloud_tasks: list[dict]) -> str:
         """Envía el proyecto y sus tareas a Bonita"""
         process_id = self.bonita.get_process_id_by_name(self.process_name)
         case_id = self.bonita.initiate_process(process_id).get("caseId")
@@ -60,6 +64,7 @@ class ProjectService:
                 "project_tasks": tasks_bonita,
                 "project_end_date": project_data.end_date.strftime("%Y-%m-%d"),
                 "project_status": project_data.status,
-                "project_owner": project_data.owner_name
+                "project_owner_id": project_data.owner_id
             }
         })
+        return case_id

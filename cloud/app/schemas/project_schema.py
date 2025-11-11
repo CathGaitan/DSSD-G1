@@ -1,6 +1,6 @@
 from app.schemas.task_schema import TaskBase, TaskCreate
-from pydantic import BaseModel, field_validator, constr, model_validator
-from typing import List, Optional, Annotated
+from pydantic import BaseModel, field_validator, model_validator
+from typing import List, Optional
 from datetime import date
 
 
@@ -10,7 +10,7 @@ class ProjectBase(BaseModel):
     start_date: date
     end_date: date
     status: Optional[str] = "active"
-    owner_id: Optional[int] = None
+    owner_id: int
 
     model_config = {
         "from_attributes": True
@@ -48,7 +48,6 @@ class ProjectBase(BaseModel):
 
 class ProjectCreate(ProjectBase):
     tasks: List[TaskCreate]
-    owner_name: str
 
     @field_validator("tasks")
     def validate_tasks(cls, v):

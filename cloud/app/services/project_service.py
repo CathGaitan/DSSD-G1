@@ -31,11 +31,9 @@ class ProjectService:
 
     def store_projects(self, project_data: ProjectCreate) -> ProjectResponse:
         try:
-            self.ong_service.verify_ong_exists(project_data.owner_id, project_data.owner_name)
+            self.ong_service.verify_ong_id_exists(project_data.owner_id)
             project_dict = project_data.model_dump(exclude={"tasks"})
-            owner_name = project_dict.pop("owner_name", None)
-            ong = self.ong_repo.get_by_name(owner_name)
-            project_dict["owner_id"] = int(ong.id)
+            project_dict["owner_id"] = int(project_data.owner_id)
             project = self.project_repo.create(project_dict)
             self.task_service.process_and_save_tasks(project_data.tasks, project.id)
             return project
