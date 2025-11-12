@@ -60,3 +60,11 @@ class TaskRepository(BaseRepository):
         for task in tasks:
             self.db.refresh(task)
         return tasks
+
+    def has_ong_association(self, task_id: int) -> bool:
+        return (
+            self.db.query(TaskOngAssociation)
+            .filter(TaskOngAssociation.task_id == task_id)
+            .first()
+            is not None
+        )

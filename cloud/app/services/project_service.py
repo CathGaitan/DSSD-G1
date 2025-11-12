@@ -1,3 +1,4 @@
+from urllib.parse import unquote_plus
 from fastapi import HTTPException, status
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.ong_repository import OngRepository
@@ -40,3 +41,12 @@ class ProjectService:
         except Exception as e:
             self.project_repo.db.rollback()
             raise e
+
+    def all_tasks_have_ong(self, name: str) -> bool:
+        decoded_name = unquote_plus(name)
+        print(f"Decoded project name: {decoded_name}")
+        tasks = self.get_project_by_name(decoded_name).tasks
+        for task in tasks:
+            if not self.task_service.has_ong_association(task.id):
+                return False
+        return True

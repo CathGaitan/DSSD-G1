@@ -37,3 +37,6 @@ class TaskService:
             {**task.model_dump(), "project_id": project_id}
             for task in tasks
         ]
+    
+    def has_ong_association(self, task_id: int) -> bool:
+        return self.task_repo.has_ong_association(task_id)

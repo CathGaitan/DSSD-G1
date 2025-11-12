@@ -52,21 +52,22 @@ class TaskService:
         case_id = self.project_service.get_project(project_id).bonita_case_id
         try:
             self._send_to_bonita(case_id, ong.id, task_id)
+            
         except Exception:
             self.task_repo.db.rollback()
             raise
 
     def _send_to_bonita(self, case_id: int, ong_id: int, task_id: int) -> None:       
         tasks = self.bonita.start_human_tasks(case_id)
+        time.sleep(1)
         if not tasks:
             raise Exception(f"No hay tareas humanas disponibles para el caso {case_id}")
         next_task_id = tasks[0]["id"]
-        print("id next task:", next_task_id)
         time.sleep(1)
         self.bonita.assign_task(next_task_id)
         self.bonita.send_form_data(next_task_id, {
             "compromiseInput": {
-                "task_id": task_id,
-                "ong_id": ong_id,
+                "compromise_task_id": task_id,
+                "compromise_ong_id": ong_id,
             }
         })
