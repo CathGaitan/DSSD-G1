@@ -48,7 +48,6 @@ class ProjectBase(BaseModel):
 
 class ProjectCreate(ProjectBase):
     tasks: List[TaskBase]
-    owner_name: str
 
     @field_validator("tasks")
     def validate_tasks(cls, v):
@@ -60,3 +59,9 @@ class ProjectCreate(ProjectBase):
 class ProjectResponse(ProjectBase):
     id: int
     tasks: List[TaskCreate]
+
+
+class CompleteProject(ProjectBase):
+    id: int
+    tasks: List[TaskCreate]
+    bonita_case_id: int

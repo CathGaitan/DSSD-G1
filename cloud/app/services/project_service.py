@@ -1,3 +1,4 @@
+from urllib.parse import unquote_plus
 from fastapi import HTTPException, status
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.ong_repository import OngRepository
@@ -31,14 +32,21 @@ class ProjectService:
 
     def store_projects(self, project_data: ProjectCreate) -> ProjectResponse:
         try:
-            self.ong_service.verify_ong_exists(project_data.owner_id, project_data.owner_name)
+            self.ong_service.verify_ong_id_exists(project_data.owner_id)
             project_dict = project_data.model_dump(exclude={"tasks"})
-            owner_name = project_dict.pop("owner_name", None)
-            ong = self.ong_repo.get_by_name(owner_name)
-            project_dict["owner_id"] = int(ong.id)
+            project_dict["owner_id"] = int(project_data.owner_id)
             project = self.project_repo.create(project_dict)
             self.task_service.process_and_save_tasks(project_data.tasks, project.id)
             return project
         except Exception as e:
             self.project_repo.db.rollback()
             raise e
+
+    def all_tasks_have_ong(self, name: str) -> bool:
+        decoded_name = unquote_plus(name)
+        print(f"Decoded project name: {decoded_name}")
+        tasks = self.get_project_by_name(decoded_name).tasks
+        for task in tasks:
+            if not self.task_service.has_ong_association(task.id):
+                return False
+        return True
