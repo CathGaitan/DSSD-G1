@@ -48,16 +48,34 @@ class TaskService:
         # task_id: corresponde a la task en cloud
         from app.services.project_service import ProjectService
         self.project_service = ProjectService(self.task_repo.db)
-        ong = self.ong_service.get_ong_by_id(ong_id)
         case_id = self.project_service.get_project(project_id).bonita_case_id
         try:
-            self._send_to_bonita(case_id, ong.id, task_id)
-            
+            self._send_to_bonita(case_id, {
+                "compromiseInput": {
+                    "compromise_task_id": task_id,
+                    "compromise_ong_id": ong_id,
+                }
+            })
         except Exception:
             self.task_repo.db.rollback()
             raise
 
-    def _send_to_bonita(self, case_id: int, ong_id: int, task_id: int) -> None:       
+    def select_ong_for_task(self, task_id: int, ong_id: int, project_id: int) -> None:
+        from app.services.project_service import ProjectService
+        self.project_service = ProjectService(self.task_repo.db)
+        case_id = self.project_service.get_project(project_id).bonita_case_id
+        try:
+            self._send_to_bonita(case_id, {
+                "selectCompromiseInput": {
+                    "select_comp_task_id": task_id,
+                    "select_comp_ong_id": ong_id,
+                }
+            })
+        except Exception:
+            self.task_repo.db.rollback()
+            raise
+
+    def _send_to_bonita(self, case_id: int, payload: dict) -> None:
         tasks = self.bonita.start_human_tasks(case_id)
         time.sleep(1)
         if not tasks:
@@ -65,9 +83,4 @@ class TaskService:
         next_task_id = tasks[0]["id"]
         time.sleep(1)
         self.bonita.assign_task(next_task_id)
-        self.bonita.send_form_data(next_task_id, {
-            "compromiseInput": {
-                "compromise_task_id": task_id,
-                "compromise_ong_id": ong_id,
-            }
-        })
+        self.bonita.send_form_data(next_task_id, payload)

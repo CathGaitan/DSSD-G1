@@ -49,3 +49,12 @@ class ProjectService:
             if not self.task_service.has_ong_association(task.id):
                 return False
         return True
+
+    def all_task_are_covers(self, name: str) -> bool:
+        decoded_name = unquote_plus(name)
+        tasks = self.get_project_by_name(decoded_name).tasks
+        for task in tasks:
+            assoc = self.task_service.get_ong_association(task.id)
+            if not assoc or assoc.status != "selected":
+                return False
+        return True

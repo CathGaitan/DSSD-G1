@@ -26,4 +26,14 @@ class OngService:
     def verify_ong_id_exists(self, ong_id: int) -> None:
         ong_by_id = self.ong_repo.get_by_id(ong_id)
         if not ong_by_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe una ONG con id={ong_id}.",)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe una ONG con id={ong_id}.")
+
+    def get_user_emails_for_ong(self, ong_id: int) -> list[str]:
+        ong = self.ong_repo.get_by_id(ong_id)
+        if not ong:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No existe una ONG con id={ong_id}."
+            )
+        user_emails = [user.email for user in ong.users]
+        return user_emails

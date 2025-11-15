@@ -40,8 +40,16 @@ def get_project(project_id: int, db: Session = Depends(get_db), current_user: Us
         raise HTTPException(status_code=404, detail="No se encontro el proyecto")
     return project
 
+
 @router.get("/{project_name}/all_tasks_have_ong")
 def check_all_tasks_have_ong(project_name: str, db: Session = Depends(get_db)):
     service = ProjectService(db)
     result = service.all_tasks_have_ong(project_name)
     return {"project_name": project_name, "all_tasks_have_ong": result}
+
+
+@router.get("/{project_name}/all_task_are_covers")
+def check_all_tasks_are_covers(project_name: str, db: Session = Depends(get_db)):
+    service = ProjectService(db)
+    result = service.all_task_are_covers(project_name)
+    return {"project_name": project_name, "all_task_are_covers": result}

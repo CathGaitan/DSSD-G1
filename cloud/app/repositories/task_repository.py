@@ -68,3 +68,10 @@ class TaskRepository(BaseRepository):
             .first()
             is not None
         )
+
+    def get_ong_association(self, task_id: int):
+        return (
+            self.db.query(TaskOngAssociation)
+            .filter(TaskOngAssociation.task_id == task_id)
+            .first()
+        )

@@ -18,3 +18,14 @@ async def commit_task_to_ong(commit_data: CommitRequest, db: Session = Depends(g
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/select_ong_for_task")
+async def select_ong_for_task(select_data: CommitRequest, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+    service = TaskService(db)
+    try:
+        return service.select_ong_for_task(select_data.task_id, select_data.ong_id, select_data.project_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
