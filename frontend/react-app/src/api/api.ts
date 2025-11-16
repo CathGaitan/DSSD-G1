@@ -5,7 +5,12 @@ export const api = {
 
   // GET: Obtener todos los proyectos en Cloud
   getCloudProjects: async () => {
-    const response = await fetch(`${BASE_CLOUD_URL}/api/projects/`);
+    const token = localStorage.getItem('cloud_token');
+     const response = await fetch(`${BASE_CLOUD_URL}/api/projects/`, {
+        headers: {
+            "Authorization": `Bearer ${token}`,
+        },
+    });
     if (!response.ok) throw new Error('Error al cargar proyectos');
     return response.json();
   },
@@ -19,7 +24,12 @@ export const api = {
 
   // GET: Obtener todos los proyectos en BD local
   getMyProjects: async () => {
-      const response = await fetch(`${BASE_LOCAL_URL}/projects/my-projects/`);
+    const token = localStorage.getItem('local_token');
+      const response = await fetch(`${BASE_LOCAL_URL}/projects/my-projects/`, {
+          headers: {
+              "Authorization": `Bearer ${token}`,
+          },
+      });
       if (!response.ok) throw new Error('Error al cargar proyectos');
       return response.json();
     },
@@ -41,6 +51,27 @@ export const api = {
     });
     if (!response.ok) throw new Error('Error al guardar el compromiso');
     return response.json();
+  },
+
+  // POST: Login de usuario
+  login: async (username: string, password: string, cloud: boolean) => {
+    const formData = new URLSearchParams();
+    formData.append("grant_type", "password");
+    formData.append("username", username);
+    formData.append("password", password);
+    formData.append("cloud", String(cloud));
+
+    const response = await fetch(`${BASE_LOCAL_URL}/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: formData.toString(),
+    });
+
+    if (!response.ok) throw new Error("Credenciales inválidas");
+
+    return response.json(); // devuelve el token
   },
   
 };
