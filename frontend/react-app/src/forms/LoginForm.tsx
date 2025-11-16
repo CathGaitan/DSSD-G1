@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // 👈 importamos esto
 import { InputField } from '../components/ui/InputField';
 import { Button } from '../components/ui/Button';
+import { api } from '../api/api';
+import { CheckboxField } from '../components/ui/CheckboxField';
 
 interface LoginFormProps {
     onLoginSuccess: (token: string) => void;
@@ -13,47 +15,39 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onRegister }) => 
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate(); // 👈 inicializamos
+    const navigate = useNavigate();
+    const [useCloudLogin, setUseCloudLogin] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
-        setError(null);
+const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-        try {
-            const formData = new URLSearchParams();
-            formData.append("grant_type", "password");
-            formData.append("username", username);
-            formData.append("password", password);
+    try {
+        const data = await api.login(username, password, useCloudLogin);
 
-            const response = await fetch("http://localhost:8000/auth/login", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/x-www-form-urlencoded",
-                },
-                body: formData.toString(),
-            });
-
-            if (!response.ok) {
-                throw new Error("Credenciales inválidas");
-            }
-
-            const data = await response.json();
-
-            if (data.access_token) {
-                localStorage.setItem("token", data.access_token);
-                localStorage.setItem("username", username);
-                onLoginSuccess(data.access_token);
-                navigate("/"); // 👈 redirige al home
-            } else {
-                setError("No se recibió token del servidor");
-            }
-        } catch (err: any) {
-            setError(err.message || "Error al iniciar sesión");
-        } finally {
-            setLoading(false);
+        if (!data.access_token) {
+            return setError("No se recibió token del servidor");
         }
-    };
+
+        // Guardamos token local siempre
+        localStorage.setItem("local_token", data.access_token);
+        localStorage.setItem("username", username);
+        
+        // Si vino token Cloud, también lo guardamos
+        if (data.cloud_access_token) {
+            localStorage.setItem("cloud_token", data.cloud_access_token);
+        }
+
+        onLoginSuccess(data.local_access_token ?? data.access_token);
+        navigate("/");
+
+    } catch (err: any) {
+        setError(err.message || "Error al iniciar sesión");
+    } finally {
+        setLoading(false);
+    }
+};
 
     return (
         <div className="max-w-md mx-auto bg-white rounded-2xl shadow-lg p-8 mt-12">
@@ -77,6 +71,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLoginSuccess, onRegister }) => 
                     required
                     disabled={loading}
                 />
+                <div className="mt-2">
+                    <CheckboxField
+                        label="Loguearse también en Cloud"
+                        checked={useCloudLogin}
+                        onChange={(e) => setUseCloudLogin(e.target.checked)}
+                        disabled={loading}
+                    />
+                </div>
                 {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
                 <div className="mt-6 flex flex-col items-center">
                     <Button
