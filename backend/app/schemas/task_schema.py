@@ -24,6 +24,39 @@ class TaskBase(BaseModel):
             raise ValueError("El título de la tarea debe tener al menos 5 caracteres.")
         return v
 
+    @field_validator("necessity")
+    def validate_necessity(cls, v):
+        if not v.strip():
+            raise ValueError("La necesidad de la tarea no puede estar vacía.")
+        if len(v) < 5:
+            raise ValueError("La necesidad de la tarea debe tener al menos 5 caracteres.")
+        return v
+
+    @field_validator("quantity")
+    def validate_quantity(cls, v):
+        if not v.strip():
+            raise ValueError("La cantidad a especificar no puede estar vacía.")
+        return v
+
+    @field_validator("start_date")
+    def validate_start_date(cls, v):
+        if v is None:
+            raise ValueError("La fecha de inicio de la tarea no puede estar vacía.")
+        return v
+
+    @field_validator("end_date")
+    def validate_end_date(cls, v):
+        if v is None:
+            raise ValueError("La fecha de finalización de la tarea no puede estar vacía.")
+        return v
+
+    @field_validator("status")
+    def validate_status(cls, v):
+        allowed_status = {"pending", "resolved"}
+        if v not in allowed_status:
+            raise ValueError(f"El estado debe ser uno de: {', '.join(allowed_status)}")
+        return v
+
     @model_validator(mode="after")
     def validate_dates(self):
         if self.end_date < self.start_date:

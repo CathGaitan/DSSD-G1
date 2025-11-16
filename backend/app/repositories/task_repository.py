@@ -31,7 +31,8 @@ class TaskRepository(BaseRepository):
                     start_date=task_data.start_date,
                     end_date=task_data.end_date,
                     resolves_by_itself=task_data.resolves_by_itself,
-                    project_id=task_data.project_id
+                    project_id=task_data.project_id,
+                    status="resolved"
                 )
                 self.db.add(new_task)
                 new_tasks.append(new_task)

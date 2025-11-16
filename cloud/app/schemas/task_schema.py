@@ -52,7 +52,7 @@ class TaskBase(BaseModel):
 
     @field_validator("status")
     def validate_status(cls, v):
-        allowed_status = {"pending", "active", "completed"}
+        allowed_status = {"pending", "resolved"}
         if v not in allowed_status:
             raise ValueError(f"El estado debe ser uno de: {', '.join(allowed_status)}")
         return v

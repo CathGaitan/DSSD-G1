@@ -33,6 +33,7 @@ class TaskRepository(BaseRepository):
         Marca su status como 'selected' y rechaza a las demás.
         """
         try:
+            task = self.db.query(Task).filter(Task.id == task_id).first()
             associations = self.db.query(TaskOngAssociation).filter(TaskOngAssociation.task_id == task_id).all()
             for assoc in associations:
                 if assoc.ong_id == selected_ong_id:
@@ -40,6 +41,7 @@ class TaskRepository(BaseRepository):
                     assoc.selected_at = datetime.now()
                 else:
                     assoc.status = "rejected"
+            task.status = "resolved"
             self.db.commit()
             return {"message": "ONG seleccionada exitosamente"}
         except Exception as e:

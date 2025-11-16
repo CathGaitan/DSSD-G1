@@ -70,7 +70,7 @@ class TaskService:
                     "select_comp_task_id": task_id,
                     "select_comp_ong_id": ong_id,
                 }
-            })
+            }) 
         except Exception:
             self.task_repo.db.rollback()
             raise

@@ -50,11 +50,14 @@ class ProjectService:
                 return False
         return True
 
-    def all_task_are_covers(self, name: str) -> bool:
+    def all_tasks_are_covers(self, name: str) -> bool:
         decoded_name = unquote_plus(name)
-        tasks = self.get_project_by_name(decoded_name).tasks
-        for task in tasks:
-            assoc = self.task_service.get_ong_association(task.id)
-            if not assoc or assoc.status != "selected":
-                return False
-        return True
+        project = self.get_project_by_name(decoded_name)
+        all_selected = all(
+            (assoc := self.task_service.get_ong_association(task.id))
+            and assoc.status == "selected"
+            for task in project.tasks
+        )
+        if all_selected:
+            self.project_repo.update(project, {"status": "execution"})
+        return all_selected

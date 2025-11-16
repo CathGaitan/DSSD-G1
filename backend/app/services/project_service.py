@@ -29,6 +29,8 @@ class ProjectService:
             project = self.project_repo.create(project_dict)
 
             local_tasks, cloud_tasks = self.task_service.process_tasks(project_data.tasks, project.id, project_data.owner_id)
+            if not cloud_tasks:
+                self.project_repo.update(project, {"status": "execution"})
             case_id = self._send_to_bonita(project_data, cloud_tasks)
             self.project_repo.update(project, {"bonita_case_id": case_id})
             return project
