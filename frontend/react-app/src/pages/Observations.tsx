@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react'; // 👈 Se quita 'useCallback' que no se usaba
+import React, { useState, useEffect } from 'react';
 import { api } from '../api/api';
 import { type ShowProject } from '../types/project.types';
 import { type Task } from '../types/task.types';
+import { type Ong } from '../types/ong.types';
 
 // --- Constantes de Paginación ---
 const ITEMS_PER_PAGE = 5; // Proyectos por página
@@ -12,6 +13,8 @@ const Observations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
+  const [ongMap, setOngMap] = useState<Map<number, string>>(new Map());
+
   // Estado para expandir/colapsar
   const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
 
@@ -26,21 +29,31 @@ const Observations: React.FC = () => {
 
   // --- Carga de Datos ---
   useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchProjectsAndOngs = async () => {
       try {
         setLoading(true);
-        const data = await api.getExecutionProjects(); 
+        // Cargar ambas fuentes en paralelo
+        const projectsPromise = api.getExecutionProjects(); 
+        const ongsPromise = api.getOngs();
+
+        const [data, ongsData] = await Promise.all([projectsPromise, ongsPromise]);
+        
         setProjects(data);
+
+        const newOngMap = new Map<number, string>();
+        ongsData.forEach((ong: Ong) => newOngMap.set(ong.id, ong.name));
+        setOngMap(newOngMap);
+
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error desconocido al cargar proyectos');
-        console.error('Error fetching projects:', err);
+        setError(err instanceof Error ? err.message : 'Error desconocido al cargar datos');
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchProjects();
-  }, []);
+    fetchProjectsAndOngs();
+  }, []); // El array vacío asegura que se ejecute solo una vez
 
   // --- Manejadores de Eventos ---
   const handleProjectClick = (projectId: number) => {
@@ -131,8 +144,10 @@ const Observations: React.FC = () => {
           <table className="w-full">
             {/* Cabecera de la tabla */}
             <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
+              {}
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Proyecto</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">ONG Dueña</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Descripción</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Estado</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Tareas</th>
@@ -141,21 +156,20 @@ const Observations: React.FC = () => {
             </thead>
             {/* Cuerpo de la tabla */}
             <tbody className="divide-y divide-gray-200">
-              {/* 🔽 Modificado para mostrar mensaje correcto 🔽 */}
+              {/* 🔽 4. colSpan actualizado a 6 🔽 */}
               {projects.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     No tienes proyectos asignados.
                   </td>
                 </tr>
               ) : currentProjects.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                     No se encontraron proyectos en esta página.
                   </td>
                 </tr>
               ) : (
-                // 🔽 Modificado para iterar sobre `currentProjects` 🔽
                 currentProjects.map((project) => (
                   <React.Fragment key={project.id}>
                     {/* === FILA PRINCIPAL (PROYECTO) === */}
@@ -163,8 +177,13 @@ const Observations: React.FC = () => {
                       className="hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => handleProjectClick(project.id)}
                     >
-                      {/* ... (Celdas de proyecto sin cambios) ... */}
+                      {}
                       <td className="px-6 py-4"><div className="font-semibold text-gray-900">{project.name}</div></td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-700">
+                          {ongMap.get(project.owner_id) || 'Desconocida'}
+                        </div>
+                      </td>
                       <td className="px-6 py-4"><div className="text-sm text-gray-700 max-w-xs">{project.description}</div></td>
                       <td className="px-6 py-4">{getStatusBadge(project.status)}</td>
                       <td className="px-6 py-4">
@@ -186,7 +205,8 @@ const Observations: React.FC = () => {
                     {/* === FILA DESPLEGABLE (TAREAS) === */}
                     {expandedProjectId === project.id && (
                       <tr className="bg-violet-50">
-                        <td colSpan={5} className="p-0">
+                        {/* 👈 4. colSpan actualizado a 6 */}
+                        <td colSpan={6} className="p-0">
                           <div className="p-4 overflow-hidden transition-all duration-300 ease-in-out">
                             <h4 className="text-base font-semibold text-violet-800 mb-3 ml-2">Tareas del Proyecto</h4>
                             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -233,7 +253,7 @@ const Observations: React.FC = () => {
           </table>
         </div>
 
-        {/* 🔽 --- SECCIÓN DE PAGINACIÓN --- 🔽 */}
+        {/* --- Paginación --- */}
         {totalPages > 1 && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-between">
@@ -276,11 +296,9 @@ const Observations: React.FC = () => {
             </div>
           </div>
         )}
-        {/* 🔼 --- FIN DE SECCIÓN DE PAGINACIÓN --- 🔼 */}
-
       </div>
 
-      {/* --- Modal para Cargar Observación --- */}
+      {}
       {showObservationModal && selectedProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn">
