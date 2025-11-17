@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/api';
 import { type ShowProject } from '../types/project.types';
 import { type Ong } from '../types/ong.types';
-import { type Task } from '../types/task.types'; // 👈 Asegúrate de que este tipo incluya 'id' y 'status'
+import { type Task } from '../types/task.types';
 
 interface ShowProjectsBaseProps {
   // Configuración del comportamiento
@@ -32,9 +32,15 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   // Estados generales
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<string>('todos'); // 'todos', 'active', 'execution', 'finished'
+  
+  // 👇 --- ESTADO AÑADIDO para el nuevo filtro ---
+  const [filterOngId, setFilterOngId] = useState<string>('todos'); // 'todos' o un ID de ONG
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [ongInfoData, setOngInfoData] = useState<Ong[]>([]);
+  
+  // 👇 --- REEMPLAZADO ongInfoData con myOngs ---
+  const [myOngs, setMyOngs] = useState<Ong[]>([]);
 
   const itemsPerPage = 5;
 
@@ -44,16 +50,20 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
       try {
         setLoading(true);
         
+        // 👇 --- LÓGICA DE FETCH MODIFICADA ---
         const projectsPromise = fetchProjects();
-        const ongsPromise = (showCommitActions) ? api.getOngs() : Promise.resolve([]);
+        // Siempre obtenemos las ONGs del usuario actual
+        const userPromise = api.getCurrentUser(); 
         
-        const [projectsData, ongsData] = await Promise.all([
+        // Esperamos a que ambas promesas se resuelvan
+        const [projectsData, userData] = await Promise.all([
           projectsPromise,
-          ongsPromise
+          userPromise
         ]);
         
         setProjects(projectsData);
-        setOngInfoData(ongsData);
+        // Guardamos las ONGs del usuario
+        setMyOngs(userData.ongs || []); 
         
         setError(null);
       } catch (err) {
@@ -65,7 +75,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     };
 
     fetchData();
-  }, [fetchProjects, showCommitActions]);
+  }, [fetchProjects]); // 👈 Dependencias actualizadas
 
   // --- Manejadores de Eventos ---
 
@@ -163,7 +173,16 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   const filteredProjects = projects.filter(project => {
     // Usamos el 'status' real del proyecto para el filtro
     const statusMatch = filterStatus === 'todos' || project.status === filterStatus;
-    return statusMatch;
+    
+    // 👇 --- LÓGICA DE FILTRO POR ONG AÑADIDA ---
+    // Solo aplicamos este filtro si no estamos mostrando la columna de organizador
+    // (es decir, estamos en "Mis Tareas")
+    let ongMatch = true; 
+    if (!showOrganizerColumn) {
+      ongMatch = filterOngId === 'todos' || project.owner_id === parseInt(filterOngId, 10);
+    }
+
+    return statusMatch && ongMatch;
   });
 
   // Paginación
@@ -244,6 +263,30 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
               <option value="finished">Finalizado</option>
             </select>
           </div>
+          
+          {/* 👇 --- NUEVO FILTRO DE ONG (CONDICIONAL) --- */}
+          {/* Solo mostrar en "Mis Tareas" (donde showOrganizerColumn es false) y si el usuario tiene ONGs */}
+          {!showOrganizerColumn && myOngs.length > 0 && (
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mi ONG
+              </label>
+              <select
+                value={filterOngId}
+                onChange={(e) => {
+                  setFilterOngId(e.target.value);
+                  setCurrentPage(1); // Resetear paginación
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              >
+                {myOngs.map((ong) => (
+                  <option key={ong.id} value={ong.id}>
+                    {ong.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -424,7 +467,8 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               >
                 <option value="">-- Selecciona una organización --</option>
-                {ongInfoData.map(org => (
+                {/* 👇 --- MODIFICADO PARA USAR myOngs --- */}
+                {myOngs.map(org => (
                   <option key={org.id} value={org.id}>
                     {org.name}
                   </option>

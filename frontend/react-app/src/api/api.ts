@@ -3,6 +3,25 @@ const BASE_LOCAL_URL = 'http://localhost:8000';
 
 export const api = {
 
+  getCurrentUser: async () => {
+    const token = localStorage.getItem('local_token'); // Usamos el token local
+    if (!token) {
+      console.warn("No hay token local, no se pueden obtener datos del usuario.");
+      return { ongs: [] };
+    }
+    const response = await fetch(`${BASE_LOCAL_URL}/users/me`, {
+        headers: {
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+    
+    if (!response.ok) {
+        console.error('Error al cargar datos del usuario');
+        return { ongs: [] }; 
+    }
+    
+    return response.json();
+  },
   // GET: Obtener todos los proyectos en Cloud
   getCloudProjects: async () => {
     const token = localStorage.getItem('cloud_token');

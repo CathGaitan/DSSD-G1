@@ -1,7 +1,8 @@
+from typing import Optional
 from sqlalchemy.orm import Session
 from app.repositories.project_repository import ProjectRepository
-from app.bonita_integration.bonita_client import BonitaClient
 from app.schemas.project_schema import ProjectCreate, ProjectResponse
+from app.schemas.user_schema import UserResponse
 from app.services.task_service import TaskService
 from app.bonita_integration.bonita_api import bonita
 import time
@@ -20,8 +21,13 @@ class ProjectService:
             raise Exception(f"No existe un proyecto con id={project_id}.")
         return project
 
-    def get_projects(self) -> list[ProjectResponse]:
-        return self.project_repo.get_all()
+    def get_projects(self, user: Optional[UserResponse] = None) -> list[ProjectResponse]:
+        if user:
+            user_ong_ids = {ong.id for ong in user.ongs}
+            if not user_ong_ids:
+                return []
+            return self.project_repo.get_projects_by_owner_ids(list(user_ong_ids))
+        return []
 
     def get_projects_with_status(self, status: str) -> list[ProjectResponse]:
         return self.project_repo.get_by_status(status)

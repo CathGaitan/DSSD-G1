@@ -14,11 +14,11 @@ def create_project(project: ProjectCreate, db: Session = Depends(get_db), curren
     service = ProjectService(db)
     return service.create_project(project)
 
-# EDITAR: Obtener proyectos asociados a un usuario específico 
+
 @router.get("/my-projects/", response_model=list[ProjectResponse])
-def get_projects(db: Session = Depends(get_db)):
+def get_projects(db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     service = ProjectService(db)
-    return service.get_projects()
+    return service.get_projects(user=current_user)
 
 
 @router.get("/projects_status/{status}", response_model=list[ProjectResponse])
