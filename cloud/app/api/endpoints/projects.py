@@ -53,3 +53,8 @@ def check_all_tasks_are_covers(project_name: str, db: Session = Depends(get_db))
     service = ProjectService(db)
     result = service.all_tasks_are_covers(project_name)
     return {"project_name": project_name, "all_tasks_are_covers": result}
+
+@router.get("/projects_status/{status}", response_model=list[ProjectResponse])
+def get_projects_with_status(status: str, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+    service = ProjectService(db)
+    return service.get_projects_with_status(status)

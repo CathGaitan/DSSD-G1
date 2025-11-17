@@ -1,26 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/api';
 import { type ShowProject } from '../types/project.types';
 import { type Ong } from '../types/ong.types';
-
-interface CollaborationRequest {
-  id: number;
-  projectName: string;
-  description: string;
-  quantity: string;
-  organizerONG: string;
-  createdDate: string;
-  endDate: string;
-  status: 'activo' | 'completado';
-  committedBy?: string;
-  commitDate?: string;
-}
+import { type Task } from '../types/task.types'; // 👈 Asegúrate de que este tipo incluya 'id' y 'status'
 
 interface ShowProjectsBaseProps {
   // Configuración del comportamiento
   fetchProjects: () => Promise<ShowProject[]>;
   showCommitActions?: boolean;
-  showOrganizerColumn?: boolean;
+  showOrganizerColumn?: boolean; 
   title?: string;
   subtitle?: string;
 }
@@ -28,77 +16,43 @@ interface ShowProjectsBaseProps {
 const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   fetchProjects,
   showCommitActions = false,
-  showOrganizerColumn = true,
+  showOrganizerColumn = true, 
   title = '📋 Pedidos de Colaboración',
   subtitle = 'Gestiona y responde a las necesidades de los proyectos comunitarios'
 }) => {
-  const [requests, setRequests] = useState<CollaborationRequest[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState<string>('todos');
-  const [selectedRequest, setSelectedRequest] = useState<CollaborationRequest | null>(null);
+  // --- Estados ---
+  const [projects, setProjects] = useState<ShowProject[]>([]);
+  const [expandedProjectId, setExpandedProjectId] = useState<number | null>(null);
+  
+  // Estados para el Modal de "Comprometer"
   const [showCommitModal, setShowCommitModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+  
+  // Estados generales
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterStatus, setFilterStatus] = useState<string>('todos'); // 'todos', 'active', 'execution', 'finished'
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ongInfoData, setOngInfoData] = useState<Ong[]>([]);
 
   const itemsPerPage = 5;
 
-  // Convertir datos de API a formato de tabla
-  const transformProjectsToRequests = (projects: ShowProject[]): CollaborationRequest[] => {
-    const requests: CollaborationRequest[] = [];
-    
-    projects.forEach(project => {
-      // Validar que tasks exista y sea un array
-      if (project.tasks && Array.isArray(project.tasks)) {
-        project.tasks.forEach((task, taskIndex) => {
-          requests.push({
-            id: `${project.id}-${taskIndex}` as any,
-            projectName: project.name,
-            description: task.necessity,
-            quantity: task.quantity,
-            organizerONG: project.owner_id.toString(),
-            createdDate: project.start_date,
-            endDate: task.end_date,
-            status: mapProjectStatusToRequestStatus(project.status),
-            committedBy: undefined,
-            commitDate: undefined
-          });
-        });
-      }
-    });
-    
-    return requests;
-  };
-
-  // Mapear estado del proyecto al estado del request
-  const mapProjectStatusToRequestStatus = (status: string): 'activo' | 'completado' => {
-    switch(status) {
-      case 'active':
-        return 'activo';
-      case 'completed':
-        return 'completado';
-      default:
-        return 'activo';
-    }
-  };
-
-  // Cargar datos desde la API
+  // --- Carga de Datos ---
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
         const projectsPromise = fetchProjects();
-        const ongsPromise = (showCommitActions || showOrganizerColumn) ? api.getOngs() : Promise.resolve([]);
+        const ongsPromise = (showCommitActions) ? api.getOngs() : Promise.resolve([]);
         
         const [projectsData, ongsData] = await Promise.all([
           projectsPromise,
           ongsPromise
         ]);
         
-        const transformedRequests = transformProjectsToRequests(projectsData);
-        setRequests(transformedRequests);
+        setProjects(projectsData);
         setOngInfoData(ongsData);
         
         setError(null);
@@ -111,56 +65,30 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     };
 
     fetchData();
-  }, [fetchProjects, showCommitActions, showOrganizerColumn]);
+  }, [fetchProjects, showCommitActions]);
 
-  // Color según estado
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      activo: "bg-blue-100 text-blue-800",
-      completado: "bg-green-100 text-green-800"
-    };
-    const labels = {
-      activo: "Activo",
-      completado: "Completado"
-    };
-    return (
-      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${styles[status as keyof typeof styles]}`}>
-        {labels[status as keyof typeof labels]}
-      </span>
-    );
+  // --- Manejadores de Eventos ---
+
+  const handleProjectClick = (projectId: number) => {
+    setExpandedProjectId(prevId => (prevId === projectId ? null : projectId));
   };
 
-  // Filtrar pedidos
-  const filteredRequests = requests.filter(req => {
-    const statusMatch = filterStatus === 'todos' || req.status === filterStatus;
-    return statusMatch;
-  });
-
-  // Paginación
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentRequests = filteredRequests.slice(startIndex, endIndex);
-
-  // Comprometer ayuda
-  const handleCommit = (request: CollaborationRequest) => {
-    setSelectedRequest(request);
+  const handleCommit = (task: Task) => {
+    setSelectedTask(task);
     setShowCommitModal(true);
   };
 
   const confirmCommit = async () => {
-    if (selectedRequest && selectedOrgId) {
+    if (selectedTask && selectedOrgId) {
       try {
-        const taskId = selectedRequest.id.toString().split('-')[0];
-        await api.commitTaskToOng(Number(taskId), selectedOrgId);
+        await api.commitTaskToOng(selectedTask.id, selectedOrgId);
         
         setShowCommitModal(false);
         setSelectedOrgId(null);
-        setSelectedRequest(null);
+        setSelectedTask(null);
         
         const projectsData = await fetchProjects();
-        const transformedRequests = transformProjectsToRequests(projectsData);
-        setRequests(transformedRequests);
+        setProjects(projectsData);
         
       } catch (error) {
         console.error('Error al comprometer la ayuda:', error);
@@ -169,11 +97,80 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     }
   };
 
-  // Obtener nombre de ONG por ID
-  const getONGName = (ongId: string): string => {
-    const org = ongInfoData.find(o => o.id === Number(ongId));
-    return org ? org.name : `ONG #${ongId}`;
+  // --- Lógica de Renderizado ---
+
+  // Badge para estado de PROYECTO
+  const getStatusBadge = (status: string) => {
+    const styles: { [key: string]: string } = {
+      active: "bg-blue-100 text-blue-800",       // Estado: active
+      execution: "bg-yellow-100 text-yellow-800", // Estado: execution
+      finished: "bg-green-100 text-green-800",   // Estado: finished
+      default: "bg-gray-100 text-gray-800"
+    };
+    const labels: { [key: string]: string } = {
+      active: "Activo",
+      execution: "En Ejecución",
+      finished: "Finalizado",
+      default: status.charAt(0).toUpperCase() + status.slice(1) // Capitalizar
+    };
+
+    const style = styles[status] || styles.default;
+    const label = labels[status] || labels.default;
+    
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${style}`}>
+        {label}
+      </span>
+    );
   };
+
+  // Badge para estado de TAREA
+  const getTaskStatusBadge = (status: string) => {
+    const styles: { [key: string]: string } = {
+      pending: "bg-yellow-100 text-yellow-800",
+      resolved: "bg-green-100 text-green-800",
+      // Mantenemos los otros estados por si acaso la API los devuelve
+      interested: "bg-blue-100 text-blue-800",
+      selected: "bg-green-100 text-green-800",
+      owner: "bg-indigo-100 text-indigo-800",
+      rejected: "bg-red-100 text-red-800",
+      default: "bg-gray-100 text-gray-800"
+    };
+    
+    const labels: { [key: string]: string } = {
+      pending: "Pendiente",
+      resolved: "Resuelta",
+      // Etiquetas para los otros estados
+      interested: "Interesado",
+      selected: "Seleccionada",
+      owner: "Propia",
+      rejected: "Rechazada",
+      default: status.charAt(0).toUpperCase() + status.slice(1) // Capitalizar
+    };
+
+    const style = styles[status] || styles.default;
+    const label = labels[status] || labels.default;
+
+    return (
+      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${style}`}>
+        {label}
+      </span>
+    );
+  };
+
+
+  // Filtrar Proyectos
+  const filteredProjects = projects.filter(project => {
+    // Usamos el 'status' real del proyecto para el filtro
+    const statusMatch = filterStatus === 'todos' || project.status === filterStatus;
+    return statusMatch;
+  });
+
+  // Paginación
+  const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentProjects = filteredProjects.slice(startIndex, endIndex);
 
   // Mostrar loading
   if (loading) {
@@ -181,7 +178,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
           <div className="text-6xl mb-4">⏳</div>
-          <div className="text-xl text-violet-600 font-semibold">Cargando pedidos...</div>
+          <div className="text-xl text-violet-600 font-semibold">Cargando proyectos...</div>
         </div>
       </div>
     );
@@ -189,12 +186,12 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
 
   // Mostrar error
   if (error) {
-    return (
+     return (
       <div className="max-w-2xl mx-auto mt-8">
         <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded">
           <div className="flex items-center mb-2">
             <span className="text-2xl mr-2">⚠️</span>
-            <h3 className="font-bold">Error al cargar los pedidos</h3>
+            <h3 className="font-bold">Error al cargar los proyectos</h3>
           </div>
           <p>{error}</p>
           <button 
@@ -210,7 +207,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
 
   return (
     <div className="w-full">
-      {/* Header */}
+      {/* Header y Filtros */}
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -222,7 +219,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-violet-600">{filteredRequests.length}</div>
+            <div className="text-3xl font-bold text-violet-600">{filteredProjects.length}</div>
             <div className="text-sm text-gray-500">Cantidad de proyectos</div>
           </div>
         </div>
@@ -242,87 +239,127 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
             >
               <option value="todos">Todos los estados</option>
-              <option value="activo">Activo</option>
-              <option value="completado">Completado</option>
+              <option value="active">Activo</option>
+              <option value="execution">En Ejecución</option>
+              <option value="finished">Finalizado</option>
             </select>
           </div>
         </div>
       </div>
 
-      {/* Tabla de Pedidos */}
+      {/* Tabla de Proyectos */}
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
+            {/* === CABECERA DE PROYECTOS === */}
             <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Proyecto</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Descripción</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Cantidad</th>
-                {showOrganizerColumn && (
-                  <th className="px-6 py-4 text-left text-sm font-semibold">ONG Organizadora</th>
-                )}
                 <th className="px-6 py-4 text-left text-sm font-semibold">Fecha Término</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold">Estado del proyecto</th>
-                {showCommitActions && (
-                  <th className="px-6 py-4 text-left text-sm font-semibold">Acciones</th>
-                )}
+                <th className="px-6 py-4 text-left text-sm font-semibold">Estado</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold">Tareas</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {currentRequests.map((request) => (
-                <tr key={request.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-semibold text-gray-900">{request.projectName}</div>
-                    <div className="text-xs text-gray-500">Creado: {request.createdDate}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-700 max-w-xs">{request.description}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-medium text-gray-900">{request.quantity}</span>
-                  </td>
-                  {showOrganizerColumn && (
+              {currentProjects.map((project) => (
+                <React.Fragment key={project.id}>
+                  {/* === FILA PRINCIPAL (PROYECTO) === */}
+                  <tr 
+                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => handleProjectClick(project.id)}
+                  >
                     <td className="px-6 py-4">
-                      <span className="text-sm font-medium text-violet-700">{getONGName(request.organizerONG)}</span>
+                      <div className="font-semibold text-gray-900">{project.name}</div>
+                      <div className="text-xs text-gray-500">Inicia: {project.start_date}</div>
                     </td>
-                  )}
-                  <td className="px-6 py-4">
-                    <span className="text-sm text-gray-700">{request.endDate}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {getStatusBadge(request.status)}
-                  </td>
-                  {showCommitActions && (
                     <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        {!request.committedBy && (
-                          <button
-                            onClick={() => handleCommit(request)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-md hover:shadow-lg"
-                          >
-                            Comprometer
-                          </button>
-                        )}
-                        {request.committedBy && (
-                          <span className="px-4 py-2 text-blue-600 text-sm font-medium">
-                            ✓ Comprometido por {request.committedBy}
-                          </span>
-                        )}
-                      </div>
+                      <div className="text-sm text-gray-700 max-w-xs">{project.description}</div>
                     </td>
+                    <td className="px-6 py-4">
+                      <span className="text-sm text-gray-700">{project.end_date}</span>
+                    </td>
+                    <td className="px-6 py-4">
+                      {getStatusBadge(project.status)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                        {project.tasks.length} {project.tasks.length === 1 ? 'Tarea' : 'Tareas'}
+                        <span className={`ml-2 transform transition-transform ${expandedProjectId === project.id ? 'rotate-180' : 'rotate-0'}`}>
+                          ▼
+                        </span>
+                      </span>
+                    </td>
+                  </tr>
+
+                  {/* === FILA DESPLEGABLE (TAREAS) === */}
+                  {expandedProjectId === project.id && (
+                    <tr className="bg-violet-50">
+                      <td colSpan={5} className="p-0">
+                        <div className="p-4 overflow-hidden transition-all duration-300 ease-in-out">
+                          <h4 className="text-base font-semibold text-violet-800 mb-3 ml-2">Tareas del Proyecto</h4>
+                          
+                          {/* Tabla Anidada de Tareas */}
+                          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                            <table className="w-full">
+                              <thead className="bg-gray-100">
+                                <tr>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Título</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Necesidad</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Cantidad</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Período</th>
+                                  <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Estado</th>
+                                  {showCommitActions && (
+                                    <th className="px-4 py-2 text-left text-xs font-semibold text-gray-600 uppercase">Acciones</th>
+                                  )}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-gray-200">
+                                {project.tasks.map((task) => (
+                                  <tr key={task.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3 text-sm text-gray-800 font-medium">{task.title}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{task.necessity}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{task.quantity}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">
+                                      <div className="flex flex-col">
+                                        <span><span className="font-semibold text-gray-800">Inicio:</span> {task.start_date}</span>
+                                        <span><span className="font-semibold text-gray-800">Fin:</span> {task.end_date}</span>
+                                      </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm">
+                                      {getTaskStatusBadge(task.status)}
+                                    </td>
+                                    {showCommitActions && (
+                                      <td className="px-4 py-3">
+                                        <button
+                                          onClick={() => handleCommit(task)}
+                                          className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                                        >
+                                          Comprometer
+                                        </button>
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
                   )}
-                </tr>
+                </React.Fragment>
               ))}
             </tbody>
           </table>
         </div>
 
-        {/* Paginación */}
+        {/* 🔽 --- SECCIÓN DE PAGINACIÓN (RESTAURADA) --- 🔽 */}
         {totalPages > 1 && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredRequests.length)} de {filteredRequests.length} pedidos
+                Mostrando {startIndex + 1} a {Math.min(endIndex, filteredProjects.length)} de {filteredProjects.length} proyectos
               </div>
               <div className="flex gap-2">
                 <button
@@ -358,10 +395,11 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             </div>
           </div>
         )}
+        {/* 🔼 --- FIN DE SECCIÓN DE PAGINACIÓN --- 🔼 */}
       </div>
 
       {/* Modal para Comprometer Ayuda */}
-      {showCommitActions && showCommitModal && selectedRequest && (
+      {showCommitActions && showCommitModal && selectedTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
@@ -369,14 +407,12 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             </h3>
             <div className="mb-6">
               <div className="bg-violet-50 rounded-lg p-4 mb-4">
-                <p className="text-sm font-semibold text-violet-900 mb-1">Proyecto:</p>
-                <p className="text-gray-700">{selectedRequest.projectName}</p>
+                <p className="text-sm font-semibold text-violet-900 mb-1">Tarea:</p>
+                <p className="text-gray-700 font-bold">{selectedTask.title}</p>
                 <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Pedido:</p>
-                <p className="text-gray-700">{selectedRequest.description}</p>
+                <p className="text-gray-700">{selectedTask.necessity}</p>
                 <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Cantidad:</p>
-                <p className="text-gray-700">{selectedRequest.quantity}</p>
-                <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Fecha Término:</p>
-                <p className="text-gray-700">{selectedRequest.endDate}</p>
+                <p className="text-gray-700">{selectedTask.quantity}</p>
               </div>
               
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -408,7 +444,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                 onClick={() => {
                   setShowCommitModal(false);
                   setSelectedOrgId(null);
-                  setSelectedRequest(null);
+                  setSelectedTask(null);
                 }}
                 className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
               >
@@ -420,11 +456,11 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
       )}
 
       {/* Mensaje si no hay resultados */}
-      {currentRequests.length === 0 && (
-        <div className="bg-white rounded-2xl shadow-xl p-12 text-center mt-8">
+      {currentProjects.length === 0 && (
+         <div className="bg-white rounded-2xl shadow-xl p-12 text-center mt-8">
           <div className="text-6xl mb-4">🔭</div>
           <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            No se encontraron pedidos
+            No se encontraron proyectos
           </h3>
           <p className="text-gray-600">
             Intenta ajustar los filtros para ver más resultados

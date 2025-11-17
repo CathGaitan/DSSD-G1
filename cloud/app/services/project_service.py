@@ -61,3 +61,6 @@ class ProjectService:
         if all_selected:
             self.project_repo.update(project, {"status": "execution"})
         return all_selected
+
+    def get_projects_with_status(self, status: str) -> list[ProjectResponse]:
+        return self.project_repo.get_by_status(status)

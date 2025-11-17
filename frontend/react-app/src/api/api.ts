@@ -33,7 +33,32 @@ export const api = {
       if (!response.ok) throw new Error('Error al cargar proyectos');
       return response.json();
     },
-
+  
+//GET: Obtener todos los proyectos en ejecucion
+  getExecutionProjects: async () => {
+    const cloud_token = localStorage.getItem('cloud_token');
+    const local_token = localStorage.getItem('local_token');
+    const [cloud_response, local_response] = await Promise.all([
+        fetch(`${BASE_CLOUD_URL}/api/projects/projects_status/execution/`, {
+            headers: {
+                "Authorization": `Bearer ${cloud_token}`,
+            },
+        }),
+        fetch(`${BASE_LOCAL_URL}/projects/projects_status/execution/`, {
+            headers: {
+                "Authorization": `Bearer ${local_token}`,
+            },
+        })
+    ]);
+    if (!cloud_response.ok || !local_response.ok) {
+        throw new Error('Error al cargar proyectos de una o ambas fuentes');
+    }
+    const [cloud_projects, local_projects] = await Promise.all([
+        cloud_response.json(),
+        local_response.json()
+    ]);
+    return [...cloud_projects, ...local_projects];
+  },
   
   //CAMBIAR - DEBE PEGAR A BACK LOCAL QUE ARRANQUE TASK DE BONITA
   // POST: Comprometer una tarea a una ONG

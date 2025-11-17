@@ -23,6 +23,9 @@ class ProjectService:
     def get_projects(self) -> list[ProjectResponse]:
         return self.project_repo.get_all()
 
+    def get_projects_with_status(self, status: str) -> list[ProjectResponse]:
+        return self.project_repo.get_by_status(status)
+
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         try:
             project_dict = project_data.model_dump(exclude={"tasks"})

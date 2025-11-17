@@ -7,6 +7,7 @@ import RegisterForm from './forms/RegisterForm';
 import LoginForm from './forms/LoginForm';
 import ShowProjectsCloud from './pages/ShowProjectsCloud';
 import ShowProjectsLocal from './pages/ShowProjectsLocal';
+import Observations from './pages/Observations';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           {/* <Route path="/login" element={<LoginForm />} /> */}
           <Route path="/cloud-projects" element={<ShowProjectsCloud />} />
           <Route path="/local-projects" element={<ShowProjectsLocal />} />
+          <Route path="/observations" element={<Observations />} />
         </Routes>
       </Layout>
     </Router>

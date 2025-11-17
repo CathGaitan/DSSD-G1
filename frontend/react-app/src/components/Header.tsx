@@ -14,7 +14,7 @@ const Header: React.FC = () => {
     { path: '/create-project', label: 'Crear Proyecto', icon: '' },
     { path: '/cloud-projects', label: 'Ver pedidos colaboracion', icon: '' },
     { path: '/local-projects', label: 'Mis tareas', icon: '' },
-
+    { path: '/observations', label: 'Observaciones', icon: '' },
   ];
 
   // Filtramos los botones que no deben mostrarse según la ruta actual
