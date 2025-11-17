@@ -31,16 +31,14 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   
   // Estados generales
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState<string>('todos'); // 'todos', 'active', 'execution', 'finished'
-  
-  // 👇 --- ESTADO AÑADIDO para el nuevo filtro ---
-  const [filterOngId, setFilterOngId] = useState<string>('todos'); // 'todos' o un ID de ONG
-  
+  const [filterStatus, setFilterStatus] = useState<string>('todos'); 
+  const [filterOngId, setFilterOngId] = useState<string>('todos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // 👇 --- REEMPLAZADO ongInfoData con myOngs ---
-  const [myOngs, setMyOngs] = useState<Ong[]>([]);
+  // --- Estados de ONGs ---
+  const [myOngs, setMyOngs] = useState<Ong[]>([]); // Para el modal de "comprometer"
+  const [allOngsMap, setAllOngsMap] = useState<Map<number, string>>(new Map()); // Para mostrar nombres de organizadores
 
   const itemsPerPage = 5;
 
@@ -50,20 +48,29 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
       try {
         setLoading(true);
         
-        // 👇 --- LÓGICA DE FETCH MODIFICADA ---
         const projectsPromise = fetchProjects();
-        // Siempre obtenemos las ONGs del usuario actual
-        const userPromise = api.getCurrentUser(); 
+        const userPromise = api.getCurrentUser(); // Para el modal
         
-        // Esperamos a que ambas promesas se resuelvan
-        const [projectsData, userData] = await Promise.all([
+        // 👇 Solo buscar todas las ONGs (para lookup) si vamos a mostrar la columna
+        const allOngsPromise = showOrganizerColumn 
+          ? api.getOngs() // Para el lookup de nombres
+          : Promise.resolve([]); // No hacer nada si no se necesita
+        
+        const [projectsData, userData, allOngsData] = await Promise.all([
           projectsPromise,
-          userPromise
+          userPromise,
+          allOngsPromise
         ]);
         
         setProjects(projectsData);
-        // Guardamos las ONGs del usuario
-        setMyOngs(userData.ongs || []); 
+        setMyOngs(userData.ongs || []); // Sigue siendo para el modal
+        
+        // 👇 Poblar el nuevo Map si se cargaron todas las ONGs
+        if (allOngsData.length > 0) {
+          const newOngMap = new Map<number, string>();
+          allOngsData.forEach((ong: Ong) => newOngMap.set(ong.id, ong.name));
+          setAllOngsMap(newOngMap);
+        }
         
         setError(null);
       } catch (err) {
@@ -75,7 +82,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     };
 
     fetchData();
-  }, [fetchProjects]); // 👈 Dependencias actualizadas
+  }, [fetchProjects, showOrganizerColumn]); // Añado showOrganizerColumn a las dependencias
 
   // --- Manejadores de Eventos ---
 
@@ -91,6 +98,12 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   const confirmCommit = async () => {
     if (selectedTask && selectedOrgId) {
       try {
+        // Enviar el project_id (si la API lo necesita)
+        // const project = projects.find(p => p.tasks.some(t => t.id === selectedTask.id));
+        // const projectId = project ? project.id : 0; 
+        // await api.commitTaskToOng(selectedTask.id, selectedOrgId, projectId);
+
+        // Si la API solo necesita taskId y ongId (como en el api.ts actual)
         await api.commitTaskToOng(selectedTask.id, selectedOrgId);
         
         setShowCommitModal(false);
@@ -112,16 +125,16 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   // Badge para estado de PROYECTO
   const getStatusBadge = (status: string) => {
     const styles: { [key: string]: string } = {
-      active: "bg-blue-100 text-blue-800",       // Estado: active
-      execution: "bg-yellow-100 text-yellow-800", // Estado: execution
-      finished: "bg-green-100 text-green-800",   // Estado: finished
+      active: "bg-blue-100 text-blue-800",       
+      execution: "bg-yellow-100 text-yellow-800", 
+      finished: "bg-green-100 text-green-800",   
       default: "bg-gray-100 text-gray-800"
     };
     const labels: { [key: string]: string } = {
       active: "Activo",
       execution: "En Ejecución",
       finished: "Finalizado",
-      default: status.charAt(0).toUpperCase() + status.slice(1) // Capitalizar
+      default: status.charAt(0).toUpperCase() + status.slice(1) 
     };
 
     const style = styles[status] || styles.default;
@@ -139,7 +152,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     const styles: { [key: string]: string } = {
       pending: "bg-yellow-100 text-yellow-800",
       resolved: "bg-green-100 text-green-800",
-      // Mantenemos los otros estados por si acaso la API los devuelve
       interested: "bg-blue-100 text-blue-800",
       selected: "bg-green-100 text-green-800",
       owner: "bg-indigo-100 text-indigo-800",
@@ -150,12 +162,11 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     const labels: { [key: string]: string } = {
       pending: "Pendiente",
       resolved: "Resuelta",
-      // Etiquetas para los otros estados
       interested: "Interesado",
       selected: "Seleccionada",
       owner: "Propia",
       rejected: "Rechazada",
-      default: status.charAt(0).toUpperCase() + status.slice(1) // Capitalizar
+      default: status.charAt(0).toUpperCase() + status.slice(1)
     };
 
     const style = styles[status] || styles.default;
@@ -171,14 +182,10 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
 
   // Filtrar Proyectos
   const filteredProjects = projects.filter(project => {
-    // Usamos el 'status' real del proyecto para el filtro
     const statusMatch = filterStatus === 'todos' || project.status === filterStatus;
     
-    // 👇 --- LÓGICA DE FILTRO POR ONG AÑADIDA ---
-    // Solo aplicamos este filtro si no estamos mostrando la columna de organizador
-    // (es decir, estamos en "Mis Tareas")
     let ongMatch = true; 
-    if (!showOrganizerColumn) {
+    if (!showOrganizerColumn) { // Si estamos en "Mis Tareas"
       ongMatch = filterOngId === 'todos' || project.owner_id === parseInt(filterOngId, 10);
     }
 
@@ -264,8 +271,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             </select>
           </div>
           
-          {/* 👇 --- NUEVO FILTRO DE ONG (CONDICIONAL) --- */}
-          {/* Solo mostrar en "Mis Tareas" (donde showOrganizerColumn es false) y si el usuario tiene ONGs */}
+          {/* Filtro de ONG (Solo en "Mis Tareas") */}
           {!showOrganizerColumn && myOngs.length > 0 && (
             <div className="flex-1 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -275,7 +281,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                 value={filterOngId}
                 onChange={(e) => {
                   setFilterOngId(e.target.value);
-                  setCurrentPage(1); // Resetear paginación
+                  setCurrentPage(1);
                 }}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               >
@@ -298,6 +304,12 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Proyecto</th>
+                
+                {/* 👇 --- CABECERA DE ONG (CONDICIONAL) --- 👇 */}
+                {showOrganizerColumn && (
+                  <th className="px-6 py-4 text-left text-sm font-semibold">ONG Organizadora</th>
+                )}
+                
                 <th className="px-6 py-4 text-left text-sm font-semibold">Descripción</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Fecha Término</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Estado</th>
@@ -316,6 +328,16 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                       <div className="font-semibold text-gray-900">{project.name}</div>
                       <div className="text-xs text-gray-500">Inicia: {project.start_date}</div>
                     </td>
+
+                    {/* 👇 --- CELDA DE ONG (CONDICIONAL) --- 👇 */}
+                    {showOrganizerColumn && (
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-medium text-gray-800">
+                          {allOngsMap.get(project.owner_id) || 'Desconocida'}
+                        </span>
+                      </td>
+                    )}
+                    
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-700 max-w-xs">{project.description}</div>
                     </td>
@@ -338,7 +360,8 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                   {/* === FILA DESPLEGABLE (TAREAS) === */}
                   {expandedProjectId === project.id && (
                     <tr className="bg-violet-50">
-                      <td colSpan={5} className="p-0">
+                      {/* 👇 --- COLSPAN ACTUALIZADO (CONDICIONAL) --- 👇 */}
+                      <td colSpan={showOrganizerColumn ? 6 : 5} className="p-0">
                         <div className="p-4 overflow-hidden transition-all duration-300 ease-in-out">
                           <h4 className="text-base font-semibold text-violet-800 mb-3 ml-2">Tareas del Proyecto</h4>
                           
@@ -397,7 +420,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
           </table>
         </div>
 
-        {/* 🔽 --- SECCIÓN DE PAGINACIÓN (RESTAURADA) --- 🔽 */}
+        {/* --- Paginación --- */}
         {totalPages > 1 && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-between">
@@ -438,7 +461,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             </div>
           </div>
         )}
-        {/* 🔼 --- FIN DE SECCIÓN DE PAGINACIÓN --- 🔼 */}
       </div>
 
       {/* Modal para Comprometer Ayuda */}
@@ -467,7 +489,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               >
                 <option value="">-- Selecciona una organización --</option>
-                {/* 👇 --- MODIFICADO PARA USAR myOngs --- */}
+                {/* Sigue usando myOngs, lo cual es correcto para este modal */}
                 {myOngs.map(org => (
                   <option key={org.id} value={org.id}>
                     {org.name}
