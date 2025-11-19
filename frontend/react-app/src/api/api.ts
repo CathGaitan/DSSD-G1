@@ -22,6 +22,30 @@ export const api = {
     
     return response.json();
   },
+
+  // POST: Enviar un proyecto hacia el backend local
+  createProject: async (payload: any) => {
+    const token = localStorage.getItem('local_token');
+    if (!token) {
+        throw new Error("No hay token local. Inicia sesión para crear un proyecto.");
+    }
+    console.log(JSON.stringify(payload));
+    const response = await fetch(`${BASE_LOCAL_URL}/projects/create`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, 
+        },
+        body: JSON.stringify(payload),
+    });
+    
+    if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || `Error ${response.status}: No se pudo crear el proyecto`);
+    }
+    return response.json();
+  },
+
   getMyOngs: async () => {
     const token = localStorage.getItem('local_token');
     if (!token) {
@@ -96,20 +120,23 @@ export const api = {
     return [...cloud_projects, ...local_projects];
   },
   
-  //CAMBIAR - DEBE PEGAR A BACK LOCAL QUE ARRANQUE TASK DE BONITA
   // POST: Comprometer una tarea a una ONG
-  commitTaskToOng: async (taskId: number, ongId: number) => {
-
-    const response = await fetch(`${BASE_CLOUD_URL}/api/tasks/task_compromise`, {
+  commitTaskToOng: async (taskId: number, ongId: number, projectId: number) => {
+    const local_token = localStorage.getItem('local_token');
+    const response = await fetch(`${BASE_LOCAL_URL}/tasks/task_compromise`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Authorization": `Bearer ${local_token}`,
+
       },
       body: JSON.stringify({
+        project_id: projectId,
         task_id: taskId,
         ong_id: ongId,
       }),
     });
+    console.log('Response:', response);
     if (!response.ok) throw new Error('Error al guardar el compromiso');
     return response.json();
   },

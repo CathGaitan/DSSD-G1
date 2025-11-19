@@ -49,23 +49,22 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
         setLoading(true);
         
         const projectsPromise = fetchProjects();
-        const userPromise = api.getCurrentUser(); // Para el modal
+        const userPromise = api.getCurrentUser();
         
-        // 👇 Solo buscar todas las ONGs (para lookup) si vamos a mostrar la columna
         const allOngsPromise = showOrganizerColumn 
-          ? api.getOngs() // Para el lookup de nombres
-          : Promise.resolve([]); // No hacer nada si no se necesita
+          ? api.getOngs()
+          : Promise.resolve([]);
         
         const [projectsData, userData, allOngsData] = await Promise.all([
           projectsPromise,
           userPromise,
           allOngsPromise
         ]);
+        console.log('Fetched Projects:', projectsData);
         
         setProjects(projectsData);
-        setMyOngs(userData.ongs || []); // Sigue siendo para el modal
+        setMyOngs(userData.ongs || []);
         
-        // 👇 Poblar el nuevo Map si se cargaron todas las ONGs
         if (allOngsData.length > 0) {
           const newOngMap = new Map<number, string>();
           allOngsData.forEach((ong: Ong) => newOngMap.set(ong.id, ong.name));
@@ -82,7 +81,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     };
 
     fetchData();
-  }, [fetchProjects, showOrganizerColumn]); // Añado showOrganizerColumn a las dependencias
+  }, [fetchProjects, showOrganizerColumn]);
 
   // --- Manejadores de Eventos ---
 
@@ -98,13 +97,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   const confirmCommit = async () => {
     if (selectedTask && selectedOrgId) {
       try {
-        // Enviar el project_id (si la API lo necesita)
-        // const project = projects.find(p => p.tasks.some(t => t.id === selectedTask.id));
-        // const projectId = project ? project.id : 0; 
-        // await api.commitTaskToOng(selectedTask.id, selectedOrgId, projectId);
-
-        // Si la API solo necesita taskId y ongId (como en el api.ts actual)
-        await api.commitTaskToOng(selectedTask.id, selectedOrgId);
+        await api.commitTaskToOng(selectedTask.id, selectedOrgId, 3);
         
         setShowCommitModal(false);
         setSelectedOrgId(null);
@@ -122,7 +115,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
 
   // --- Lógica de Renderizado ---
 
-  // Badge para estado de PROYECTO
   const getStatusBadge = (status: string) => {
     const styles: { [key: string]: string } = {
       active: "bg-blue-100 text-blue-800",       

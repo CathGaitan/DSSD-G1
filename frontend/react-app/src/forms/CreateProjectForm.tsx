@@ -4,7 +4,7 @@ import { ProjectForm } from '../components/project/ProjectForm';
 import { TasksForm } from '../components/project/TasksForm';
 import { Alert, useAlert } from '../components/ui/Alert';
 import type { Ong, Task, ProjectFormData } from '../types/project.types';
-import { api } from '../api/api'; 
+import { api } from '../api/api';
 
 const CreateProjectForm: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -54,14 +54,14 @@ const CreateProjectForm: React.FC = () => {
     const localToken = localStorage.getItem('local_token');
     const cloudToken = localStorage.getItem('cloud_token');
     const localOnly = !!localToken && !cloudToken;
-    setIsLocalOnly(localOnly); //
+    setIsLocalOnly(localOnly);
 
     const fetchUserOngs = async () => {
         try {
             const userOngs = await api.getMyOngs();
             
             if (userOngs && userOngs.length > 0) {
-                setOngs(userOngs); //
+                setOngs(userOngs);
                 if (userOngs.length === 1 && formData.owner_id === 0) {
                      setFormData(prev => ({ ...prev, owner_id: userOngs[0].id }));
                 }
@@ -188,7 +188,6 @@ const CreateProjectForm: React.FC = () => {
     return isValid;
   };
 
-  // --- Validación de tareas ---
   const validateTaskField = (index: number, name: string, value: string) => {
     let error = '';
     
@@ -283,7 +282,6 @@ const CreateProjectForm: React.FC = () => {
         isValid = false;
       }
 
-      // Validar que la fecha de fin sea posterior a la de inicio
       if (task.start_date && task.end_date && new Date(task.end_date) < new Date(task.start_date)) {
         taskError.end_date = 'La fecha de fin debe ser posterior a la de inicio';
         isValid = false;
@@ -339,7 +337,6 @@ const CreateProjectForm: React.FC = () => {
     setStep(2);
   };
 
-  // --- Manejo de tareas ---
   const handleTaskChange = (
     index: number,
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -349,7 +346,6 @@ const CreateProjectForm: React.FC = () => {
     
     const taskValue = isCheckbox ? (e.target as HTMLInputElement).checked : value;
     
-    // PREVENCIÓN: Si es solo local y está intentando desmarcar, ignorar.
     if (isLocalOnly && name === 'resolves_by_itself' && !taskValue) {
         return; 
     }
@@ -394,6 +390,7 @@ const CreateProjectForm: React.FC = () => {
 
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const isValid = validateAllTasks();
     
     if (!isValid) {
@@ -404,11 +401,9 @@ const CreateProjectForm: React.FC = () => {
     try {
       setLoading(true);
       
-      // Ajustar resolves_by_itself por última vez en el payload
       const payloadTasks = tasks.map(task => {
           const finalResolvesByItself = isLocalOnly ? true : task.resolves_by_itself;
 
-          // El backend no necesita la propiedad 'id' de la interfaz de frontend
           const { id, ...rest } = task;
           return {
               ...rest,
@@ -422,21 +417,10 @@ const CreateProjectForm: React.FC = () => {
         tasks: payloadTasks,
       };
       
-      const response = await fetch('http://localhost:8000/projects/create', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('local_token')}`, 
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || `Error ${response.status}: No se pudo crear el proyecto`);
-      }
+      await api.createProject(payload); 
 
       showAlert('success', 'Proyecto y tareas creados con éxito!');
+
       const newTaskAfterReset: Task = { 
         title: '', 
         necessity: '', 
@@ -478,7 +462,7 @@ const CreateProjectForm: React.FC = () => {
             {step === 1 ? (
               <ProjectForm
                 formData={formData}
-                ongs={ongs} // Ahora solo contiene las ONGs del usuario
+                ongs={ongs}
                 dateError={dateError}
                 fieldErrors={fieldErrors}
                 onSubmit={handleProjectSubmit}

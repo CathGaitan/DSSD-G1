@@ -18,7 +18,6 @@ interface TasksFormProps {
   onTaskChange: (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onAddTask: () => void;
   onRemoveTask: (index: number) => void;
-  // --- NUEVA PROP ---
   isLocalOnly: boolean;
 }
 
@@ -63,7 +62,7 @@ export const TasksForm: React.FC<TasksFormProps> = ({
             taskErrors={tasksErrors[index]}
             onChange={onTaskChange}
             onRemove={onRemoveTask}
-            isLocalOnly={isLocalOnly} // --- Pasamos el prop a TaskCard ---
+            isLocalOnly={isLocalOnly}
           />
         ))}
       </div>
