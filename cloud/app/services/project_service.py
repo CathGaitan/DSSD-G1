@@ -1,11 +1,12 @@
 from urllib.parse import unquote_plus
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
+from app.services.task_service import TaskService
+from app.services.ong_service import OngService
 from app.repositories.project_repository import ProjectRepository
 from app.repositories.ong_repository import OngRepository
-from app.services.ong_service import OngService
-from sqlalchemy.orm import Session
+from app.schemas.user_schema import UserResponse
 from app.schemas.project_schema import ProjectCreate, ProjectResponse
-from app.services.task_service import TaskService
 
 
 class ProjectService:
@@ -21,8 +22,9 @@ class ProjectService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe un proyecto con id={project_id}.")
         return project
 
-    def get_projects(self) -> list[ProjectResponse]:
-        return self.project_repo.get_all()
+    def get_projects_not_owned_by_and_active(self, user: UserResponse) -> list[ProjectResponse]:
+        user_ong_ids = [ong.id for ong in user.ongs]
+        return self.project_repo.get_projects_not_owned_by_and_active(user_ong_ids)
 
     def get_project_by_name(self, name: str) -> ProjectResponse | None:
         project = self.project_repo.get_project_by_name(name)

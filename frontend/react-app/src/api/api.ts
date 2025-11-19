@@ -25,7 +25,7 @@ export const api = {
   // GET: Obtener todos los proyectos en Cloud
   getCloudProjects: async () => {
     const token = localStorage.getItem('cloud_token');
-     const response = await fetch(`${BASE_CLOUD_URL}/api/projects/`, {
+     const response = await fetch(`${BASE_CLOUD_URL}/api/projects/get_projects_not_owned_by_and_active`, {
         headers: {
             "Authorization": `Bearer ${token}`,
         },

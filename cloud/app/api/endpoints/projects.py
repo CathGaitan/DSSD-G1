@@ -11,10 +11,10 @@ from app.schemas.project_schema import ProjectCreate
 router = APIRouter()
 
 
-@router.get("/", response_model=list[ProjectResponse])
+@router.get("/get_projects_not_owned_by_and_active", response_model=list[ProjectResponse])
 def get_projects(db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     service = ProjectService(db)
-    return service.get_projects()
+    return service.get_projects_not_owned_by_and_active(user=current_user)
 
 
 @router.post("/store_projects", response_model=ProjectResponse)
