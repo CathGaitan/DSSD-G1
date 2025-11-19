@@ -5,8 +5,10 @@ const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ✅ Detectamos si el usuario está logueado (existe token)
-  const isAuthenticated = !!localStorage.getItem("token");
+  // 1. Detección de autenticación (Local y Cloud)
+  const isAuthenticated = !!localStorage.getItem("token"); // Lógica base para Login/Logout
+  const isAuthenticatedLocal = !!localStorage.getItem("local_token");
+  const isAuthenticatedCloud = !!localStorage.getItem("cloud_token");
 
   const navItems = [
     { path: "/register", label: "Registrarse", icon: "" },
@@ -17,25 +19,39 @@ const Header: React.FC = () => {
     { path: '/observations', label: 'Observaciones', icon: '' },
   ];
 
-  // Filtramos los botones que no deben mostrarse según la ruta actual
   const visibleNavItems = navItems.filter((item) => {
-    if (location.pathname === "/register" && item.path === "/register") return false;
-    if (location.pathname === "/login" && item.path === "/login") return false;
-    if (isAuthenticated && (item.path === "/login" || item.path === "/register"))
-      return false; // 🔒 Ocultamos Login y Registro si ya está autenticado
+    const isAuthPath = item.path === "/login" || item.path === "/register";
+    const isLocalTierPath = item.path === '/local-projects' || item.path === '/create-project';
+    const isCloudTierPath = item.path === '/cloud-projects' || item.path === '/observations';
+    
+    if (isAuthPath) {
+        if (isAuthenticated) {
+            return false;
+        }
+        return location.pathname !== item.path;
+    }
+
+    if (isCloudTierPath) {
+        return isAuthenticatedCloud;
+    }
+
+    if (isLocalTierPath) {
+        return isAuthenticatedLocal;
+    }
+
     return true;
   });
 
-  // 🔐 Función de logout
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("local_token");
+    localStorage.removeItem("cloud_token");
     localStorage.removeItem("username");
-    navigate("/login"); // redirige al login
+    navigate("/login");
   };
 
   return (
     <header className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white px-4 sm:px-6 py-3 flex items-center justify-between fixed top-0 left-0 w-full shadow-lg z-50 backdrop-blur-sm bg-opacity-95">
-      {/* Logo / Nombre */}
       <Link to="/" className="flex items-center gap-2 sm:gap-3 group">
         <div className="bg-white text-violet-600 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-xl shadow-md group-hover:scale-110 transition-transform">
           P
@@ -45,7 +61,6 @@ const Header: React.FC = () => {
         </h2>
       </Link>
 
-      {/* Menú de navegación */}
       <nav className="flex items-center gap-2">
         {visibleNavItems.map((item) => (
           <Link key={item.path} to={item.path}>
@@ -62,7 +77,6 @@ const Header: React.FC = () => {
           </Link>
         ))}
 
-        {/* Botón de Logout condicional */}
         {isAuthenticated && (
           <button
             onClick={handleLogout}
@@ -70,15 +84,6 @@ const Header: React.FC = () => {
           >
             🚪 <span className="hidden md:inline">Logout</span>
           </button>
-        )}
-
-        {/* Botón de Inicio condicional */}
-        {location.pathname !== "/" && (
-          <Link to="/">
-            <button className="px-3 py-2 rounded-lg font-medium bg-violet-700 bg-opacity-50 hover:bg-white hover:text-violet-600 hover:shadow-md transition-all flex items-center gap-2 text-sm">
-              🏠 <span className="hidden md:inline">Inicio</span>
-            </button>
-          </Link>
         )}
       </nav>
     </header>

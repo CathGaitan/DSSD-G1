@@ -4,16 +4,28 @@ import { ProjectForm } from '../components/project/ProjectForm';
 import { TasksForm } from '../components/project/TasksForm';
 import { Alert, useAlert } from '../components/ui/Alert';
 import type { Ong, Task, ProjectFormData } from '../types/project.types';
+import { api } from '../api/api'; 
 
 const CreateProjectForm: React.FC = () => {
   const [step, setStep] = useState(1);
   const [ongs, setOngs] = useState<Ong[]>([]);
+  const [isLocalOnly, setIsLocalOnly] = useState(false);
+  
+  const initialTask: Task = { 
+    title: '', 
+    necessity: '', 
+    start_date: '', 
+    end_date: '', 
+    resolves_by_itself: false, 
+    quantity: '' 
+  };
+    
   const [formData, setFormData] = useState<ProjectFormData>({
     name: '',
     description: '',
     start_date: '',
     end_date: '',
-    owner_id: 0,
+    owner_id: 0, 
     status: 'active',
   });
   const [dateError, setDateError] = useState('');
@@ -24,9 +36,7 @@ const CreateProjectForm: React.FC = () => {
     end_date: '',
     owner_id: '',
   });
-  const [tasks, setTasks] = useState<Task[]>([
-    { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' },
-  ]);
+  const [tasks, setTasks] = useState<Task[]>([initialTask]);
   const [tasksErrors, setTasksErrors] = useState<Array<{
     title: string;
     necessity: string;
@@ -38,17 +48,45 @@ const CreateProjectForm: React.FC = () => {
   ]);
   const [loading, setLoading] = useState(false);
   
-  // Hook para las alertas
   const { alert, showAlert, closeAlert } = useAlert();
 
   useEffect(() => {
-    fetch('http://localhost:8000/ongs/')
-      .then((response) => response.json())
-      .then((data) => setOngs(data))
-      .catch((error) => {
-        console.error('Error fetching ONGs:', error);
-        showAlert('error', 'Error al cargar las ONGs');
-      });
+    const localToken = localStorage.getItem('local_token');
+    const cloudToken = localStorage.getItem('cloud_token');
+    const localOnly = !!localToken && !cloudToken;
+    setIsLocalOnly(localOnly); //
+
+    const fetchUserOngs = async () => {
+        try {
+            const userOngs = await api.getMyOngs();
+            
+            if (userOngs && userOngs.length > 0) {
+                setOngs(userOngs); //
+                if (userOngs.length === 1 && formData.owner_id === 0) {
+                     setFormData(prev => ({ ...prev, owner_id: userOngs[0].id }));
+                }
+            } else {
+                 setOngs([]);
+                 showAlert('warning', 'Tu usuario no está asociado a ninguna ONG.');
+            }
+        } catch (error) {
+            console.error('Error fetching ONGs:', error);
+            showAlert('error', 'Error al cargar las ONGs del usuario. Asegúrate de estar logueado.');
+        }
+    };
+    
+    fetchUserOngs();
+    
+    setTasks(prevTasks => {
+        if (localOnly) {
+            return prevTasks.map(task => ({
+                ...task,
+                resolves_by_itself: true
+            }));
+        }
+        return prevTasks;
+    });
+    
   }, []);
 
   const validateDates = (start: string, end: string) => {
@@ -59,21 +97,21 @@ const CreateProjectForm: React.FC = () => {
     }
   };
 
-  const validateField = (name: string, value: string) => {
+  const validateField = (name: string, value: string | number) => {
     let error = '';
     
     switch (name) {
       case 'name':
-        if (!value.trim()) {
+        if (!String(value).trim()) { 
           error = 'El nombre del proyecto es obligatorio';
-        } else if (value.trim().length < 3) {
+        } else if (String(value).trim().length < 3) {
           error = 'El nombre debe tener al menos 3 caracteres';
         }
         break;
       case 'description':
-        if (!value.trim()) {
+        if (!String(value).trim()) {
           error = 'La descripción es obligatoria';
-        } else if (value.trim().length < 15) {
+        } else if (String(value).trim().length < 15) {
           error = 'La descripción debe tener al menos 15 caracteres';
         }
         break;
@@ -88,7 +126,7 @@ const CreateProjectForm: React.FC = () => {
         }
         break;
       case 'owner_id':
-        if (!value) {
+        if (Number(value) === 0) { 
           error = 'Debes seleccionar una ONG';
         }
         break;
@@ -135,10 +173,16 @@ const CreateProjectForm: React.FC = () => {
       isValid = false;
     }
 
-    if (!formData.owner_id) {
+    if (Number(formData.owner_id) === 0) {
       errors.owner_id = 'Debes seleccionar una ONG';
       isValid = false;
     }
+    
+    if (ongs.length === 0) {
+        errors.owner_id = errors.owner_id || 'Tu usuario no está asociado a ninguna ONG.';
+        isValid = false;
+    }
+
 
     setFieldErrors(errors);
     return isValid;
@@ -181,8 +225,10 @@ const CreateProjectForm: React.FC = () => {
     }
     
     const newTasksErrors = [...tasksErrors];
-    newTasksErrors[index] = { ...newTasksErrors[index], [name]: error };
-    setTasksErrors(newTasksErrors);
+    if (newTasksErrors[index]) {
+        newTasksErrors[index] = { ...newTasksErrors[index], [name]: error };
+        setTasksErrors(newTasksErrors);
+    }
     
     return error === '';
   };
@@ -254,11 +300,14 @@ const CreateProjectForm: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    const newFormData = { ...formData, [name]: value };
+    const isNumberField = name === 'owner_id';
+    
+    const finalValue = isNumberField ? Number(value) : value;
+
+    const newFormData = { ...formData, [name]: finalValue };
     setFormData(newFormData);
 
-    // Validar el campo mientras se escribe
-    validateField(name, value);
+    validateField(name, finalValue);
 
     if (name === 'start_date' || name === 'end_date') {
       validateDates(newFormData.start_date, newFormData.end_date);
@@ -268,7 +317,6 @@ const CreateProjectForm: React.FC = () => {
   const handleProjectSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validar todos los campos
     const isValid = validateAllFields();
     
     if (!isValid) {
@@ -281,6 +329,13 @@ const CreateProjectForm: React.FC = () => {
       return;
     }
     
+    setTasks(prevTasks => {
+        return prevTasks.map(task => ({
+            ...task,
+            resolves_by_itself: isLocalOnly || task.resolves_by_itself
+        }));
+    });
+    
     setStep(2);
   };
 
@@ -290,21 +345,43 @@ const CreateProjectForm: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value, type } = e.target;
-    const updatedTasks = [...tasks];
-    updatedTasks[index] = {
-      ...updatedTasks[index],
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value,
-    };
-    setTasks(updatedTasks);
-
-    // Validar el campo mientras se escribe
-    if (name !== 'resolves_by_itself') {
-      validateTaskField(index, name, value);
+    const isCheckbox = type === 'checkbox';
+    
+    const taskValue = isCheckbox ? (e.target as HTMLInputElement).checked : value;
+    
+    // PREVENCIÓN: Si es solo local y está intentando desmarcar, ignorar.
+    if (isLocalOnly && name === 'resolves_by_itself' && !taskValue) {
+        return; 
     }
+    
+    const updatedTasks = [...tasks];
+    
+    if (name !== 'resolves_by_itself') {
+         updatedTasks[index] = {
+            ...updatedTasks[index],
+            [name]: taskValue,
+        };
+        validateTaskField(index, name, value);
+    } else {
+        updatedTasks[index] = {
+            ...updatedTasks[index],
+            [name]: isLocalOnly ? true : taskValue,
+        };
+    }
+    
+    setTasks(updatedTasks);
   };
 
   const addTask = () => {
-    setTasks([...tasks, { title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' }]);
+    const newTask: Task = { 
+        title: '', 
+        necessity: '', 
+        start_date: '', 
+        end_date: '', 
+        resolves_by_itself: isLocalOnly, 
+        quantity: '' 
+    };
+    setTasks([...tasks, newTask]);
     setTasksErrors([...tasksErrors, { title: '', necessity: '', start_date: '', end_date: '', quantity: '' }]);
   };
 
@@ -315,11 +392,8 @@ const CreateProjectForm: React.FC = () => {
     }
   };
 
-  // --- Submit final ---
   const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validar todas las tareas antes de enviar
     const isValid = validateAllTasks();
     
     if (!isValid) {
@@ -329,46 +403,65 @@ const CreateProjectForm: React.FC = () => {
 
     try {
       setLoading(true);
-      // Convertir owner_id a int antes de enviar
-      const selectedOng = ongs.find(ong => ong.id === parseInt(formData.owner_id as string, 10));
-      const ongName = selectedOng ? selectedOng.name : '';
+      
+      // Ajustar resolves_by_itself por última vez en el payload
+      const payloadTasks = tasks.map(task => {
+          const finalResolvesByItself = isLocalOnly ? true : task.resolves_by_itself;
 
+          // El backend no necesita la propiedad 'id' de la interfaz de frontend
+          const { id, ...rest } = task;
+          return {
+              ...rest,
+              resolves_by_itself: finalResolvesByItself
+          }
+      });
+      
       const payload = { 
         ...formData, 
-        owner_id: parseInt(formData.owner_id as string, 10),
-        owner_name: ongName,
-        tasks 
+        owner_id: Number(formData.owner_id),
+        tasks: payloadTasks,
       };
-      console.log(payload)
+      
       const response = await fetch('http://localhost:8000/projects/create', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('local_token')}`, 
+        },
         body: JSON.stringify(payload),
       });
+      
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: No se pudo crear el proyecto`);
+        const data = await response.json();
+        throw new Error(data.detail || `Error ${response.status}: No se pudo crear el proyecto`);
       }
 
-      const data = await response.json();
       showAlert('success', 'Proyecto y tareas creados con éxito!');
+      const newTaskAfterReset: Task = { 
+        title: '', 
+        necessity: '', 
+        start_date: '', 
+        end_date: '', 
+        resolves_by_itself: isLocalOnly,
+        quantity: '' 
+      };
 
-      // // Reset
-      setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: '', status: 'active' });
-      setTasks([{ title: '', necessity: '', start_date: '', end_date: '', resolves_by_itself: false, quantity: '' }]);
-      setTasksErrors([{ title: '', necessity: '', start_date: '', end_date: '', quantity: '' }]);
+      setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: 0, status: 'active' }); 
+      setTasks([newTaskAfterReset]); 
+      setTasksErrors([tasksErrors[0]]);
       setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
       setStep(1);
     } catch (error) {
       console.error('Error creando el proyecto:', error);
-      showAlert('error', 'Hubo un error al crear el proyecto.');
+      showAlert('error', error instanceof Error ? error.message : 'Hubo un error al crear el proyecto.');
     } finally {
       setLoading(false);
     }
   };
 
+
   return (
     <div className="w-full">
-      {/* Componente de alerta */}
       {alert.show && (
         <Alert
           type={alert.type}
@@ -385,7 +478,7 @@ const CreateProjectForm: React.FC = () => {
             {step === 1 ? (
               <ProjectForm
                 formData={formData}
-                ongs={ongs}
+                ongs={ongs} // Ahora solo contiene las ONGs del usuario
                 dateError={dateError}
                 fieldErrors={fieldErrors}
                 onSubmit={handleProjectSubmit}
@@ -401,6 +494,7 @@ const CreateProjectForm: React.FC = () => {
                 onTaskChange={handleTaskChange}
                 onAddTask={addTask}
                 onRemoveTask={removeTask}
+                isLocalOnly={isLocalOnly}
               />
             )}
           </div>

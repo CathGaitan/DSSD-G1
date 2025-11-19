@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from app.repositories.ong_repository import OngRepository
 from app.repositories.user_ong_repository import UserOngRepository
 import logging
+from app.bonita_integration.bonita_api import bonita
 
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -19,6 +20,7 @@ class UserService:
         self.user_repo = user_repo.UserRepository(db)
         self.ong_repo = OngRepository(db)
         self.user_ong_repo = UserOngRepository(db)
+        self.bonita = bonita
 
     def get_all_users(self, skip: int = 0, limit: int = 100) -> list[UserResponse]:
         users = self.user_repo.get_all(skip=skip, limit=limit)
@@ -63,7 +65,10 @@ class UserService:
     def authenticate_user(self, username: str, password: str) -> Optional[UserResponse]:
         user = self.user_repo.get_by_username(username)
         if user and pwd_context.verify(password, user.hashed_password):
-            return UserResponse.model_validate(user)
+            user = UserResponse.model_validate(user)
+            token = self.bonita.login("walter.bates", "bpm") #MODIFICAR POR USER VERDADERO
+            print(f"Info Bonita: {token}")
+            return user
         return None
 
     def add_user_to_ong(self, user_id: int, ong_id: int) -> None:

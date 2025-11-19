@@ -4,7 +4,7 @@ const BASE_LOCAL_URL = 'http://localhost:8000';
 export const api = {
 
   getCurrentUser: async () => {
-    const token = localStorage.getItem('local_token'); // Usamos el token local
+    const token = localStorage.getItem('local_token');
     if (!token) {
       console.warn("No hay token local, no se pueden obtener datos del usuario.");
       return { ongs: [] };
@@ -22,6 +22,25 @@ export const api = {
     
     return response.json();
   },
+  getMyOngs: async () => {
+    const token = localStorage.getItem('local_token');
+    if (!token) {
+      console.warn("No hay token local, no se pueden obtener ONGs del usuario.");
+      return [];
+    }
+    const response = await fetch(`${BASE_LOCAL_URL}/users/me`, {
+        headers: {
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+    if (!response.ok) {
+        console.error('Error al cargar ONGs del usuario. Código:', response.status);
+        return [];
+    }
+    const userData = await response.json();
+    return userData.ongs || [];
+  },
+
   // GET: Obtener todos los proyectos en Cloud
   getCloudProjects: async () => {
     const token = localStorage.getItem('cloud_token');
@@ -34,14 +53,12 @@ export const api = {
     return response.json();
   },
 
-  //GET: Obtener las ONGs
   getOngs: async () => {
     const response = await fetch(`${BASE_CLOUD_URL}/api/ongs/`);
     if (!response.ok) throw new Error('Error al cargar ONGs');
     return response.json();
   },
 
-  // GET: Obtener todos los proyectos en BD local
   getMyProjects: async () => {
     const token = localStorage.getItem('local_token');
       const response = await fetch(`${BASE_LOCAL_URL}/projects/my-projects/`, {
