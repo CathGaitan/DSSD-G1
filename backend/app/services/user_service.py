@@ -66,8 +66,7 @@ class UserService:
         user = self.user_repo.get_by_username(username)
         if user and pwd_context.verify(password, user.hashed_password):
             user = UserResponse.model_validate(user)
-            token = self.bonita.login("walter.bates", "bpm") #MODIFICAR POR USER VERDADERO
-            print(f"Info Bonita: {token}")
+            self.bonita.login("walter.bates", "bpm") #MODIFICAR POR USER VERDADERO
             return user
         return None
 

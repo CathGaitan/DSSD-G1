@@ -35,6 +35,7 @@ const CreateProjectForm: React.FC = () => {
     start_date: '',
     end_date: '',
     owner_id: '',
+    name_server: ''
   });
   const [tasks, setTasks] = useState<Task[]>([initialTask]);
   const [tasksErrors, setTasksErrors] = useState<Array<{
@@ -132,7 +133,12 @@ const CreateProjectForm: React.FC = () => {
         break;
     }
     
-    setFieldErrors(prev => ({ ...prev, [name]: error }));
+    const newErrors = { ...fieldErrors, [name]: error };
+    if (name === 'name') {
+        newErrors.name_server = '';
+    }
+    setFieldErrors(newErrors);
+
     return error === '';
   };
 
@@ -143,6 +149,7 @@ const CreateProjectForm: React.FC = () => {
       start_date: '',
       end_date: '',
       owner_id: '',
+      name_server: ''
     };
     
     let isValid = true;
@@ -310,9 +317,13 @@ const CreateProjectForm: React.FC = () => {
     if (name === 'start_date' || name === 'end_date') {
       validateDates(newFormData.start_date, newFormData.end_date);
     }
+    
+    if (name === 'name') {
+        setFieldErrors(prev => ({ ...prev, name_server: '' }));
+    }
   };
 
-  const handleProjectSubmit = (e: React.FormEvent) => {
+  const handleProjectSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     const isValid = validateAllFields();
@@ -326,6 +337,25 @@ const CreateProjectForm: React.FC = () => {
       showAlert('warning', 'Corrige las fechas antes de continuar.');
       return;
     }
+    
+    // LÓGICA DE VALIDACIÓN ASÍNCRONA DE UNICIDAD DE NOMBRE
+    setLoading(true);
+    try {
+        const exists = await api.checkProjectNameExists(formData.name);
+        
+        if (exists) {
+            const errorMessage = 'Ya existe un proyecto con este nombre.';
+            setFieldErrors(prev => ({ ...prev, name_server: errorMessage }));
+            showAlert('error', errorMessage);
+            return;
+        }
+    } catch (error: any) {
+        showAlert('error', error.message || 'Error al verificar la unicidad del nombre del proyecto.');
+        return;
+    } finally {
+        setLoading(false);
+    }
+    // FIN LÓGICA DE VALIDACIÓN ASÍNCRONA
     
     setTasks(prevTasks => {
         return prevTasks.map(task => ({
@@ -433,7 +463,14 @@ const CreateProjectForm: React.FC = () => {
       setFormData({ name: '', description: '', start_date: '', end_date: '', owner_id: 0, status: 'active' }); 
       setTasks([newTaskAfterReset]); 
       setTasksErrors([tasksErrors[0]]);
-      setFieldErrors({ name: '', description: '', start_date: '', end_date: '', owner_id: '' });
+      setFieldErrors({ 
+        name: '', 
+        description: '', 
+        start_date: '', 
+        end_date: '', 
+        owner_id: '',
+        name_server: '',
+      });
       setStep(1);
     } catch (error) {
       console.error('Error creando el proyecto:', error);
@@ -464,9 +501,10 @@ const CreateProjectForm: React.FC = () => {
                 formData={formData}
                 ongs={ongs}
                 dateError={dateError}
-                fieldErrors={fieldErrors}
+                fieldErrors={{...fieldErrors, name: fieldErrors.name || fieldErrors.name_server}}
                 onSubmit={handleProjectSubmit}
                 onChange={handleChange}
+                loading={loading}
               />
             ) : (
               <TasksForm

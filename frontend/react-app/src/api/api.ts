@@ -73,8 +73,10 @@ export const api = {
             "Authorization": `Bearer ${token}`,
         },
     });
+    const res = await response.json();
+    console.log('Cloud Projects Response:', res);
     if (!response.ok) throw new Error('Error al cargar proyectos');
-    return response.json();
+    return res
   },
 
   getOngs: async () => {
@@ -94,7 +96,7 @@ export const api = {
       return response.json();
     },
   
-//GET: Obtener todos los proyectos en ejecucion
+  //GET: Obtener todos los proyectos en ejecucion
   getExecutionProjects: async () => {
     const cloud_token = localStorage.getItem('cloud_token');
     const local_token = localStorage.getItem('local_token');
@@ -136,7 +138,6 @@ export const api = {
         ong_id: ongId,
       }),
     });
-    console.log('Response:', response);
     if (!response.ok) throw new Error('Error al guardar el compromiso');
     return response.json();
   },
@@ -161,5 +162,52 @@ export const api = {
 
     return response.json(); // devuelve el token
   },
+
+  checkProjectNameExists: async (name: string): Promise<boolean> => {
+        const token = localStorage.getItem('local_token');
+        if (!token) {
+            throw new Error("No hay token local.");
+        }
+        const encodedName = encodeURIComponent(name);
+        const response = await fetch(`${BASE_LOCAL_URL}/projects/check_name/${encodedName}`, {
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            },
+        });
+
+        if (response.status === 404) {
+            return false;
+        }
+        
+        if (response.status === 400) {
+            return true;
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Error desconocido' }));
+            throw new Error(errorData.detail || `Error ${response.status}: No se pudo verificar el nombre del proyecto`);
+        }
+        
+        return true;
+    },
+
+    getLocalProjectByName: async (name: string) => {
+      const token = localStorage.getItem('local_token');
+      if (!token) {
+          throw new Error("No hay token local.");
+      }
+      const encodedName = encodeURIComponent(name);
+      const response = await fetch(`${BASE_LOCAL_URL}/projects/search_name/${encodedName}`, {
+          headers: {
+              "Authorization": `Bearer ${token}`,
+          },
+      });
+
+      if (!response.ok) {
+          const data = await response.json().catch(() => ({ detail: `Error ${response.status}` }));
+          throw new Error(data.detail || `Error ${response.status}: No se pudo obtener el proyecto local`);
+      }
+      return response.json();
+    },
   
 };

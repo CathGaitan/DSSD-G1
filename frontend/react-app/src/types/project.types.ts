@@ -19,3 +19,8 @@ export interface ShowProject {
   status: 'active' | 'completed';
   tasks: Task[];
 }
+
+export interface CommitData {
+  task: Task;
+  projectName: string;
+}

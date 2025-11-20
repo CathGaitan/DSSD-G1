@@ -1,4 +1,4 @@
-from app.schemas.task_schema import TaskBase, TaskCreate
+from app.schemas.task_schema import TaskResponse, TaskCreate
 from pydantic import BaseModel, field_validator, model_validator
 from typing import List, Optional
 from datetime import date
@@ -58,4 +58,4 @@ class ProjectCreate(ProjectBase):
 
 class ProjectResponse(ProjectBase):
     id: int
-    tasks: List[TaskBase]
+    tasks: List[TaskResponse]

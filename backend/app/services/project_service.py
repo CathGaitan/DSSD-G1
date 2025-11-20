@@ -4,6 +4,7 @@ from app.repositories.project_repository import ProjectRepository
 from app.schemas.project_schema import ProjectCreate, ProjectResponse
 from app.schemas.user_schema import UserResponse
 from app.services.task_service import TaskService
+from app.models.project import Project
 from app.bonita_integration.bonita_api import bonita
 import time
 
@@ -32,16 +33,29 @@ class ProjectService:
     def get_projects_with_status(self, status: str) -> list[ProjectResponse]:
         return self.project_repo.get_by_status(status)
 
+    def get_project_by_name(self, name: str) -> Optional[ProjectResponse]:
+        project = self.project_repo.get_project_by_name(name)
+        if project:
+            return ProjectResponse.model_validate(project)
+        return None
+
     def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         try:
             project_dict = project_data.model_dump(exclude={"tasks"})
-            project = self.project_repo.create(project_dict)
+            project = Project(**project_dict)
+            self.project_repo.db.add(project)
 
+            self.project_repo.db.flush()
             local_tasks, cloud_tasks = self.task_service.process_tasks(project_data.tasks, project.id, project_data.owner_id)
+
             if not cloud_tasks:
-                self.project_repo.update(project, {"status": "execution"})
-            case_id = self._send_to_bonita(project_data, cloud_tasks)
-            self.project_repo.update(project, {"bonita_case_id": case_id})
+                project.status = "execution"
+            case_id = self._send_to_bonita(project_data, cloud_tasks) 
+
+            project.bonita_case_id = case_id
+            self.project_repo.db.commit() 
+            self.project_repo.db.refresh(project)
+
             return project
         except Exception:
             self.project_repo.db.rollback()

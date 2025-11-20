@@ -12,6 +12,7 @@ router = APIRouter()
 @router.post("/task_compromise")
 async def commit_task_to_ong(commit_data: CommitRequest, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     service = TaskService(db)
+    print(commit_data)
     try:
         return service.commit_task_to_ong(commit_data.task_id, commit_data.ong_id, commit_data.project_id)
     except HTTPException:
