@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from app.schemas.user_schema import UserCreate, UserResponse
 from sqlalchemy.orm import Session
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_current_user, get_current_manager_user
 from app.core.database import get_db
 from app.services.user_service import UserService
 
@@ -20,6 +20,10 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 # Get current user
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: UserResponse = Depends(get_current_user)):
+    return current_user
+
+@router.get("/me/manager", response_model=UserResponse)
+def get_me_if_manager(current_user: UserResponse = Depends(get_current_manager_user)):
     return current_user
 
 # Create a new user

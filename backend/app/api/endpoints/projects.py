@@ -10,8 +10,7 @@ router = APIRouter()
 
 
 @router.post("/create", response_model=ProjectResponse)
-#def create_project(project: ProjectCreate, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
-def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
+def create_project(project: ProjectCreate, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     service = ProjectService(db)
     return service.create_project(project)
 

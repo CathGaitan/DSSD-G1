@@ -42,5 +42,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = user_service.get_user_by_username(username)
     if user is None:
         raise credentials_exception
+    return user
+
+def get_current_manager_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    rol_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Unauthorized, access denied",
+    ) 
+    username = verify_token(token, credentials_exception)
+    user_service = UserService(db)
+    user = user_service.get_user_by_username(username)
+    if user is None:
+        raise credentials_exception
+    if not user.is_manager:
+        raise rol_exception
     return user 
 
