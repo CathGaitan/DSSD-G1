@@ -44,25 +44,9 @@ class ProjectService:
             self.project_repo.db.rollback()
             raise e
 
-    def all_tasks_have_ong(self, name: str) -> bool:
-        decoded_name = unquote_plus(name)
-        tasks = self.get_project_by_name(decoded_name).tasks
-        for task in tasks:
-            if not self.task_service.has_ong_association(task.id):
-                return False
-        return True
-
-    def all_tasks_are_covers(self, name: str) -> bool:
-        decoded_name = unquote_plus(name)
-        project = self.get_project_by_name(decoded_name)
-        all_selected = all(
-            (assoc := self.task_service.get_ong_association(task.id))
-            and assoc.status == "selected"
-            for task in project.tasks
-        )
-        if all_selected:
-            self.project_repo.update(project, {"status": "execution"})
-        return all_selected
-
     def get_projects_with_status(self, status: str) -> list[ProjectResponse]:
         return self.project_repo.get_by_status(status)
+
+    def update_status(self, project, new_status: str):
+        project.status = new_status
+        return self.project_repo.update(project, {"status": new_status})

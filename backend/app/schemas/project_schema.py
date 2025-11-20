@@ -18,7 +18,7 @@ class ProjectBase(BaseModel):
 
     @field_validator("status")
     def validate_status(cls, v):
-        allowed_status = {"active", "execution", "finished"}
+        allowed_status = {"active", "execution", "waiting", "finished"}
         if v not in allowed_status:
             raise ValueError(f"El estado debe ser uno de: {', '.join(allowed_status)}")
         return v

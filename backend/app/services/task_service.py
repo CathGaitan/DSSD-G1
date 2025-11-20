@@ -44,8 +44,9 @@ class TaskService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe una tarea con id={task_id}.",)
 
     def commit_task_to_ong(self, task_id: int, ong_id: int, project_id: int) -> None:
-        # project_id: deberia ser el mismo en cloud y en local
+        # project_id: debe ser el project_id de local
         # task_id: corresponde a la task en cloud
+        # ong_id: ongs iguales en cloud y local
         from app.services.project_service import ProjectService
         self.project_service = ProjectService(self.task_repo.db)
         case_id = self.project_service.get_project(project_id).bonita_case_id
@@ -61,6 +62,9 @@ class TaskService:
             raise
 
     def select_ong_for_task(self, task_id: int, ong_id: int, project_id: int) -> None:
+        # project_id: debe ser el project_id de local
+        # task_id: corresponde a la task en cloud
+        # ong_id: ongs iguales en cloud y local
         from app.services.project_service import ProjectService
         self.project_service = ProjectService(self.task_repo.db)
         case_id = self.project_service.get_project(project_id).bonita_case_id

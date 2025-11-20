@@ -254,6 +254,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
 
         {/* Filtros */}
         <div className="flex flex-wrap gap-4 mt-6">
+          {!showCommitActions && (
           <div className="flex-1 min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Estado
@@ -272,6 +273,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
               <option value="finished">Finalizado</option>
             </select>
           </div>
+          )}
           
           {/* Filtro de ONG (Solo en "Mis Tareas") */}
           {!showOrganizerColumn && myOngs.length > 0 && (
