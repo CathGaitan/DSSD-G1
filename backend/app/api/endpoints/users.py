@@ -22,6 +22,7 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 def get_me(current_user: UserResponse = Depends(get_current_user)):
     return current_user
 
+# Get current user if manager
 @router.get("/me/manager", response_model=UserResponse)
 def get_me_if_manager(current_user: UserResponse = Depends(get_current_manager_user)):
     return current_user
@@ -36,6 +37,11 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     UserService(db).delete_user(user_id)  
     return
+
+# Toggle is manager
+@router.post("/{user_id}", status_code=200)
+def toggle_is_manager(user_id: int, db: Session = Depends(get_db)):
+    return UserService(db).toggle_is_manager(user_id)
 
 # Get ONGs associated with a user
 @router.get("/{user_id}/ongs", response_model=List[OngResponse])
