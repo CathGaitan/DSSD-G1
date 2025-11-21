@@ -73,3 +73,10 @@ class ProjectService:
     def get_projects_with_requests(self, owner_id: int) -> list[ProjectResponse]:
         self.ong_service.verify_ong_id_exists(owner_id)
         return self.project_repo.get_projects_with_requests(owner_id)
+
+    def get_my_projects(self, user: UserResponse) -> list[ProjectResponse]:
+        user_ong_ids = [ong.id for ong in user.ongs]
+        if not user_ong_ids:
+            return []         
+        projects = self.project_repo.get_projects_by_owner_ids(user_ong_ids)
+        return [ProjectResponse.model_validate(p) for p in projects]

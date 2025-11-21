@@ -11,6 +11,12 @@ from app.schemas.project_schema import ProjectCreate
 router = APIRouter()
 
 
+@router.get("/my_projects", response_model=list[ProjectResponse])
+def get_my_projects(db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+    service = ProjectService(db)
+    return service.get_my_projects(user=current_user)
+
+
 @router.get("/get_projects_not_owned_by_and_active", response_model=list[ProjectResponse])
 def get_projects(db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     service = ProjectService(db)

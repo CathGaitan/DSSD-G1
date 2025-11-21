@@ -65,8 +65,8 @@ export const api = {
     return userData.ongs || [];
   },
 
-  // GET: Obtener todos los proyectos en Cloud
-  getCloudProjects: async () => {
+  // GET: Obtener todos los proyectos que se puede colaborar
+  getCollaborationRequests: async () => {
     const token = localStorage.getItem('cloud_token');
      const response = await fetch(`${BASE_CLOUD_URL}/api/projects/get_projects_not_owned_by_and_active`, {
         headers: {
@@ -74,7 +74,18 @@ export const api = {
         },
     });
     const res = await response.json();
-    console.log('Cloud Projects Response:', res);
+    if (!response.ok) throw new Error('Error al cargar proyectos');
+    return res
+  },
+
+  getMyCloudProjects: async () => {
+    const token = localStorage.getItem('cloud_token');
+     const response = await fetch(`${BASE_CLOUD_URL}/api/projects/my_projects`, {
+        headers: {
+            "Authorization": `Bearer ${token}`,
+        },
+    });
+    const res = await response.json();
     if (!response.ok) throw new Error('Error al cargar proyectos');
     return res
   },

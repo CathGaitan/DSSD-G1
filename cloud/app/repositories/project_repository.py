@@ -32,4 +32,9 @@ class ProjectRepository(BaseRepository):
             )
             .distinct()
             .all()
-        ) 
+        )
+    
+    def get_projects_by_owner_ids(self, owner_ids: List[int]) -> list[Project]:
+        if not owner_ids:
+            return []
+        return self.db.query(self.model).filter(self.model.owner_id.in_(owner_ids)).all()

@@ -24,12 +24,11 @@ class ProjectService:
         return project
 
     def get_projects(self, user: Optional[UserResponse] = None) -> list[ProjectResponse]:
-        if user:
-            user_ong_ids = {ong.id for ong in user.ongs}
-            if not user_ong_ids:
-                return []
-            return self.project_repo.get_projects_by_owner_ids(list(user_ong_ids))
-        return []
+        user_ong_ids = {ong.id for ong in user.ongs}
+        if not user_ong_ids:
+            return []
+        projects = self.project_repo.get_projects_with_tasks_by_owner_ids(list(user_ong_ids))
+        return [ProjectResponse.model_validate(p) for p in projects]
 
     def get_projects_with_status(self, status: str) -> list[ProjectResponse]:
         return self.project_repo.get_by_status(status)
