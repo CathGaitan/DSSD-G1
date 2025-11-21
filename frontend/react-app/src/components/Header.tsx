@@ -15,7 +15,6 @@ const Header: React.FC = () => {
     { path: '/login', label: 'Login', icon: '' },
     { path: '/create-project', label: 'Crear Proyecto', icon: '' },
     { path: '/local-projects', label: 'Mis tareas', icon: '' },
-    // AÑADIR SEPARADOR AQUÍ (Se maneja en el renderizado)
     { path: '/cloud-projects', label: 'Mis tareas en cloud', icon: '' },
     { path: '/colaboration-requests', label: 'Pedidos colaboración', icon: '' },
     { path: '/select-requests', label: 'Elegir pedido', icon: '' },
