@@ -5,7 +5,6 @@ const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 1. Detección de autenticación (Local y Cloud)
   const isAuthenticated = !!localStorage.getItem("token"); 
   const isAuthenticatedLocal = !!localStorage.getItem("local_token");
   const isAuthenticatedCloud = !!localStorage.getItem("cloud_token");
