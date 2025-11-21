@@ -28,6 +28,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   const [showCommitModal, setShowCommitModal] = useState(false);
   const [selectedCommitData, setSelectedCommitData] = useState<CommitData | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // <--- NUEVO ESTADO
   
   // Estados generales
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,8 +38,8 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   const [error, setError] = useState<string | null>(null);
   
   // --- Estados de ONGs ---
-  const [myOngs, setMyOngs] = useState<Ong[]>([]); // Para el modal de "comprometer"
-  const [allOngsMap, setAllOngsMap] = useState<Map<number, string>>(new Map()); // Para mostrar nombres de organizadores
+  const [myOngs, setMyOngs] = useState<Ong[]>([]); 
+  const [allOngsMap, setAllOngsMap] = useState<Map<number, string>>(new Map());
 
   const itemsPerPage = 5;
 
@@ -88,7 +89,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     setExpandedProjectId(prevId => (prevId === projectId ? null : projectId));
   };
 
-  // MODIFICADO: Acepta también el nombre del proyecto
   const handleCommit = (task: Task, projectName: string) => {
     setSelectedCommitData({ task, projectName });
     setShowCommitModal(true);
@@ -96,6 +96,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
 
   const confirmCommit = async () => {
     if (selectedCommitData && selectedOrgId) {
+      setIsSubmitting(true);
       const { task, projectName } = selectedCommitData;
       let localProjectId = 0;
 
@@ -119,6 +120,8 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
       } catch (error) {
         console.error('Error al comprometer la ayuda:', error);
         alert('Error al guardar el compromiso. Intenta de nuevo.');
+      } finally {
+        setIsSubmitting(false); // <--- DESACTIVAR CARGA
       }
     }
   };
@@ -149,7 +152,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     );
   };
 
-  // Badge para estado de TAREA
   const getTaskStatusBadge = (status: string) => {
     const styles: { [key: string]: string } = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -181,26 +183,22 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     );
   };
 
-
-  // Filtrar Proyectos
   const filteredProjects = projects.filter(project => {
     const statusMatch = filterStatus === 'todos' || project.status === filterStatus;
     
     let ongMatch = true; 
-    if (!showOrganizerColumn) { // Si estamos en "Mis Tareas"
+    if (!showOrganizerColumn) { 
       ongMatch = filterOngId === 'todos' || project.owner_id === parseInt(filterOngId, 10);
     }
 
     return statusMatch && ongMatch;
   });
 
-  // Paginación
   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentProjects = filteredProjects.slice(startIndex, endIndex);
 
-  // Mostrar loading
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -212,7 +210,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     );
   }
 
-  // Mostrar error
   if (error) {
      return (
       <div className="max-w-2xl mx-auto mt-8">
@@ -235,7 +232,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
 
   return (
     <div className="w-full">
-      {/* Header y Filtros */}
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -252,7 +248,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
           </div>
         </div>
 
-        {/* Filtros */}
         <div className="flex flex-wrap gap-4 mt-6">
           {!showCommitActions && (
           <div className="flex-1 min-w-[200px]">
@@ -275,7 +270,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
           </div>
           )}
           
-          {/* Filtro de ONG (Solo en "Mis Tareas") */}
           {!showOrganizerColumn && myOngs.length > 0 && (
             <div className="flex-1 min-w-[200px]">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -300,19 +294,15 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
         </div>
       </div>
 
-      {/* Tabla de Proyectos */}
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            {/* === CABECERA DE PROYECTOS === */}
             <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Proyecto</th>
-                
                 {showOrganizerColumn && (
                   <th className="px-6 py-4 text-left text-sm font-semibold">ONG Organizadora</th>
                 )}
-                
                 <th className="px-6 py-4 text-left text-sm font-semibold">Descripción</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Fecha Término</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Estado</th>
@@ -322,7 +312,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             <tbody className="divide-y divide-gray-200">
               {currentProjects.map((project) => (
                 <React.Fragment key={project.id}>
-                  {/* === FILA PRINCIPAL (PROYECTO) === */}
                   <tr 
                     className="hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => handleProjectClick(project.id)}
@@ -332,7 +321,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                       <div className="text-xs text-gray-500">Inicia: {project.start_date}</div>
                     </td>
 
-                    {/* 👇 --- CELDA DE ONG (CONDICIONAL) --- 👇 */}
                     {showOrganizerColumn && (
                       <td className="px-6 py-4">
                         <span className="text-sm font-medium text-gray-800">
@@ -360,15 +348,12 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                     </td>
                   </tr>
 
-                  {/* === FILA DESPLEGABLE (TAREAS) === */}
                   {expandedProjectId === project.id && (
                     <tr className="bg-violet-50">
-                      {/* 👇 --- COLSPAN ACTUALIZADO (CONDICIONAL) --- 👇 */}
                       <td colSpan={showOrganizerColumn ? 6 : 5} className="p-0">
                         <div className="p-4 overflow-hidden transition-all duration-300 ease-in-out">
                           <h4 className="text-base font-semibold text-violet-800 mb-3 ml-2">Tareas del Proyecto</h4>
                           
-                          {/* Tabla Anidada de Tareas */}
                           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                             <table className="w-full">
                               <thead className="bg-gray-100">
@@ -423,7 +408,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
           </table>
         </div>
 
-        {/* --- Paginación --- */}
         {totalPages > 1 && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-between">
@@ -490,6 +474,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
               <select
                 value={selectedOrgId || ''}
                 onChange={(e) => setSelectedOrgId(Number(e.target.value))}
+                disabled={isSubmitting}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               >
                 <option value="">-- Selecciona una organización --</option>
@@ -504,18 +489,28 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={confirmCommit}
-                disabled={!selectedOrgId}
-                className="flex-1 px-6 py-3 bg-violet-600 text-white rounded-lg font-semibold hover:bg-violet-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!selectedOrgId || isSubmitting}
+                className="flex-1 px-6 py-3 bg-violet-600 text-white rounded-lg font-semibold hover:bg-violet-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
               >
-                Confirmar Compromiso
+                 {isSubmitting ? (
+                    <>
+                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                     </svg>
+                     Procesando...
+                    </>
+                ) : 'Confirmar Compromiso'}
               </button>
+              
               <button
                 onClick={() => {
                   setShowCommitModal(false);
                   setSelectedOrgId(null);
                   setSelectedCommitData(null);
                 }}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                disabled={isSubmitting}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -524,7 +519,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
         </div>
       )}
 
-      {/* Mensaje si no hay resultados */}
       {currentProjects.length === 0 && (
          <div className="bg-white rounded-2xl shadow-xl p-12 text-center mt-8">
           <div className="text-6xl mb-4">🔭</div>

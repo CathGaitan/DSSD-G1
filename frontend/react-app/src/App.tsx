@@ -8,6 +8,7 @@ import LoginForm from './forms/LoginForm';
 import ShowProjectsCloud from './pages/ShowProjectsCloud';
 import ShowProjectsLocal from './pages/ShowProjectsLocal';
 import Observations from './pages/Observations';
+import SelectRequest from './pages/SelectRequest';
 
 function App() {
   return (
@@ -23,11 +24,10 @@ function App() {
           }} onRegister={() => {
             window.location.href = "/register";
           }} />} />
-          {/* <Route path="/projects" element={<Projects />} /> */}
-          {/* <Route path="/login" element={<LoginForm />} /> */}
           <Route path="/cloud-projects" element={<ShowProjectsCloud />} />
           <Route path="/local-projects" element={<ShowProjectsLocal />} />
           <Route path="/observations" element={<Observations />} />
+          <Route path="/select-requests" element={<SelectRequest />} />
         </Routes>
       </Layout>
     </Router>

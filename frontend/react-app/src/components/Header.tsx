@@ -6,7 +6,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
 
   // 1. Detección de autenticación (Local y Cloud)
-  const isAuthenticated = !!localStorage.getItem("token"); // Lógica base para Login/Logout
+  const isAuthenticated = !!localStorage.getItem("token"); 
   const isAuthenticatedLocal = !!localStorage.getItem("local_token");
   const isAuthenticatedCloud = !!localStorage.getItem("cloud_token");
 
@@ -14,15 +14,16 @@ const Header: React.FC = () => {
     { path: "/register", label: "Registrarse", icon: "" },
     { path: '/login', label: 'Login', icon: '' },
     { path: '/create-project', label: 'Crear Proyecto', icon: '' },
-    { path: '/cloud-projects', label: 'Ver pedidos colaboracion', icon: '' },
+    { path: '/cloud-projects', label: 'Pedidos colaboración', icon: '' },
     { path: '/local-projects', label: 'Mis tareas', icon: '' },
+    { path: '/select-requests', label: 'Elegir pedido', icon: '' },
     { path: '/observations', label: 'Observaciones', icon: '' },
   ];
 
   const visibleNavItems = navItems.filter((item) => {
     const isAuthPath = item.path === "/login" || item.path === "/register";
     const isLocalTierPath = item.path === '/local-projects' || item.path === '/create-project';
-    const isCloudTierPath = item.path === '/cloud-projects' || item.path === '/observations';
+    const isCloudTierPath = item.path === '/cloud-projects' || item.path === '/observations' || item.path === '/select-requests';
     
     if (isAuthPath) {
         if (isAuthenticated) {

@@ -209,5 +209,50 @@ export const api = {
       }
       return response.json();
     },
-  
+
+    // GET: Obtener todos los compromisos (Cloud)
+    viewCompromises: async () => {
+        const cloud_token = localStorage.getItem('cloud_token');
+        const response = await fetch(`${BASE_CLOUD_URL}/api/tasks/view_compromises`, {
+            headers: {
+                "Authorization": `Bearer ${cloud_token}`,
+            },
+        });
+        if (!response.ok) throw new Error('Error al obtener compromisos');
+        return response.json();
+    },
+
+    getProjectsWithRequests: async (ownerId: number) => {
+      const cloud_token = localStorage.getItem('cloud_token');
+      const response = await fetch(`${BASE_CLOUD_URL}/api/projects/projects_with_requests/${ownerId}`, {
+          headers: {
+              "Authorization": `Bearer ${cloud_token}`,
+          },
+      });
+      if (!response.ok) throw new Error('Error al obtener proyectos con solicitudes');
+      return response.json();
+    },
+
+    // POST: Seleccionar una ONG para una tarea (Backend Local -> Bonita)
+    selectOngForTask: async (taskId: number, ongId: number, projectId: number) => {
+        const local_token = localStorage.getItem('local_token');
+        console.log('Seleccionando ONG', { taskId, ongId, projectId });
+        const response = await fetch(`${BASE_LOCAL_URL}/tasks/select_ong_for_task`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                "Authorization": `Bearer ${local_token}`,
+            },
+            body: JSON.stringify({
+                project_id: projectId,
+                task_id: taskId,
+                ong_id: ongId,
+            }),
+        });
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.detail || 'Error al seleccionar ONG');
+        }
+        return response.json();
+    },
 };
