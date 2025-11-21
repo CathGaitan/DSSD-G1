@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../api/api';
-import { type ShowProject } from '../types/project.types';
+import { type ShowProject, type CommitData } from '../types/project.types';
 import { type Ong } from '../types/ong.types';
-import { type Task } from '../types/task.types'; // 👈 Asegúrate de que este tipo incluya 'id' y 'status'
+import { type Task } from '../types/task.types';
 
 interface ShowProjectsBaseProps {
   // Configuración del comportamiento
@@ -26,15 +26,20 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   
   // Estados para el Modal de "Comprometer"
   const [showCommitModal, setShowCommitModal] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedCommitData, setSelectedCommitData] = useState<CommitData | null>(null);
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // <--- NUEVO ESTADO
   
   // Estados generales
   const [currentPage, setCurrentPage] = useState(1);
-  const [filterStatus, setFilterStatus] = useState<string>('todos'); // 'todos', 'active', 'execution', 'finished'
+  const [filterStatus, setFilterStatus] = useState<string>('todos'); 
+  const [filterOngId, setFilterOngId] = useState<string>('todos');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [ongInfoData, setOngInfoData] = useState<Ong[]>([]);
+  
+  // --- Estados de ONGs ---
+  const [myOngs, setMyOngs] = useState<Ong[]>([]); 
+  const [allOngsMap, setAllOngsMap] = useState<Map<number, string>>(new Map());
 
   const itemsPerPage = 5;
 
@@ -45,15 +50,26 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
         setLoading(true);
         
         const projectsPromise = fetchProjects();
-        const ongsPromise = (showCommitActions) ? api.getOngs() : Promise.resolve([]);
+        const userPromise = api.getCurrentUser();
         
-        const [projectsData, ongsData] = await Promise.all([
+        const allOngsPromise = showOrganizerColumn 
+          ? api.getOngs()
+          : Promise.resolve([]);
+        
+        const [projectsData, userData, allOngsData] = await Promise.all([
           projectsPromise,
-          ongsPromise
+          userPromise,
+          allOngsPromise
         ]);
         
         setProjects(projectsData);
-        setOngInfoData(ongsData);
+        setMyOngs(userData.ongs || []);
+        
+        if (allOngsData.length > 0) {
+          const newOngMap = new Map<number, string>();
+          allOngsData.forEach((ong: Ong) => newOngMap.set(ong.id, ong.name));
+          setAllOngsMap(newOngMap);
+        }
         
         setError(null);
       } catch (err) {
@@ -65,7 +81,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     };
 
     fetchData();
-  }, [fetchProjects, showCommitActions]);
+  }, [fetchProjects, showOrganizerColumn]);
 
   // --- Manejadores de Eventos ---
 
@@ -73,19 +89,30 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     setExpandedProjectId(prevId => (prevId === projectId ? null : projectId));
   };
 
-  const handleCommit = (task: Task) => {
-    setSelectedTask(task);
+  const handleCommit = (task: Task, projectName: string) => {
+    setSelectedCommitData({ task, projectName });
     setShowCommitModal(true);
   };
 
   const confirmCommit = async () => {
-    if (selectedTask && selectedOrgId) {
+    if (selectedCommitData && selectedOrgId) {
+      setIsSubmitting(true);
+      const { task, projectName } = selectedCommitData;
+      let localProjectId = 0;
+
       try {
-        await api.commitTaskToOng(selectedTask.id, selectedOrgId);
+        const localProject = await api.getLocalProjectByName(projectName);
+        localProjectId = localProject.id;
+        
+        if (!localProjectId) {
+             throw new Error('No se pudo obtener el ID local del proyecto. No se puede comprometer la tarea.');
+        }
+
+        await api.commitTaskToOng(task.id, selectedOrgId, localProjectId);
         
         setShowCommitModal(false);
         setSelectedOrgId(null);
-        setSelectedTask(null);
+        setSelectedCommitData(null);
         
         const projectsData = await fetchProjects();
         setProjects(projectsData);
@@ -93,25 +120,26 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
       } catch (error) {
         console.error('Error al comprometer la ayuda:', error);
         alert('Error al guardar el compromiso. Intenta de nuevo.');
+      } finally {
+        setIsSubmitting(false); // <--- DESACTIVAR CARGA
       }
     }
   };
 
   // --- Lógica de Renderizado ---
 
-  // Badge para estado de PROYECTO
   const getStatusBadge = (status: string) => {
     const styles: { [key: string]: string } = {
-      active: "bg-blue-100 text-blue-800",       // Estado: active
-      execution: "bg-yellow-100 text-yellow-800", // Estado: execution
-      finished: "bg-green-100 text-green-800",   // Estado: finished
+      active: "bg-blue-100 text-blue-800",       
+      execution: "bg-yellow-100 text-yellow-800", 
+      finished: "bg-green-100 text-green-800",   
       default: "bg-gray-100 text-gray-800"
     };
     const labels: { [key: string]: string } = {
       active: "Activo",
       execution: "En Ejecución",
       finished: "Finalizado",
-      default: status.charAt(0).toUpperCase() + status.slice(1) // Capitalizar
+      default: status.charAt(0).toUpperCase() + status.slice(1) 
     };
 
     const style = styles[status] || styles.default;
@@ -124,12 +152,10 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     );
   };
 
-  // Badge para estado de TAREA
   const getTaskStatusBadge = (status: string) => {
     const styles: { [key: string]: string } = {
       pending: "bg-yellow-100 text-yellow-800",
       resolved: "bg-green-100 text-green-800",
-      // Mantenemos los otros estados por si acaso la API los devuelve
       interested: "bg-blue-100 text-blue-800",
       selected: "bg-green-100 text-green-800",
       owner: "bg-indigo-100 text-indigo-800",
@@ -140,12 +166,11 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     const labels: { [key: string]: string } = {
       pending: "Pendiente",
       resolved: "Resuelta",
-      // Etiquetas para los otros estados
       interested: "Interesado",
       selected: "Seleccionada",
       owner: "Propia",
       rejected: "Rechazada",
-      default: status.charAt(0).toUpperCase() + status.slice(1) // Capitalizar
+      default: status.charAt(0).toUpperCase() + status.slice(1)
     };
 
     const style = styles[status] || styles.default;
@@ -158,21 +183,22 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     );
   };
 
-
-  // Filtrar Proyectos
   const filteredProjects = projects.filter(project => {
-    // Usamos el 'status' real del proyecto para el filtro
     const statusMatch = filterStatus === 'todos' || project.status === filterStatus;
-    return statusMatch;
+    
+    let ongMatch = true; 
+    if (!showOrganizerColumn) { 
+      ongMatch = filterOngId === 'todos' || project.owner_id === parseInt(filterOngId, 10);
+    }
+
+    return statusMatch && ongMatch;
   });
 
-  // Paginación
   const totalPages = Math.ceil(filteredProjects.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentProjects = filteredProjects.slice(startIndex, endIndex);
 
-  // Mostrar loading
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -184,7 +210,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     );
   }
 
-  // Mostrar error
   if (error) {
      return (
       <div className="max-w-2xl mx-auto mt-8">
@@ -207,7 +232,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
 
   return (
     <div className="w-full">
-      {/* Header y Filtros */}
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -224,8 +248,8 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
           </div>
         </div>
 
-        {/* Filtros */}
         <div className="flex flex-wrap gap-4 mt-6">
+          {!showCommitActions && (
           <div className="flex-1 min-w-[200px]">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Estado
@@ -244,17 +268,41 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
               <option value="finished">Finalizado</option>
             </select>
           </div>
+          )}
+          
+          {!showOrganizerColumn && myOngs.length > 0 && (
+            <div className="flex-1 min-w-[200px]">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mi ONG
+              </label>
+              <select
+                value={filterOngId}
+                onChange={(e) => {
+                  setFilterOngId(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+              >
+                {myOngs.map((ong) => (
+                  <option key={ong.id} value={ong.id}>
+                    {ong.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Tabla de Proyectos */}
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            {/* === CABECERA DE PROYECTOS === */}
             <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Proyecto</th>
+                {showOrganizerColumn && (
+                  <th className="px-6 py-4 text-left text-sm font-semibold">ONG Organizadora</th>
+                )}
                 <th className="px-6 py-4 text-left text-sm font-semibold">Descripción</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Fecha Término</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Estado</th>
@@ -264,7 +312,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             <tbody className="divide-y divide-gray-200">
               {currentProjects.map((project) => (
                 <React.Fragment key={project.id}>
-                  {/* === FILA PRINCIPAL (PROYECTO) === */}
                   <tr 
                     className="hover:bg-gray-50 transition-colors cursor-pointer"
                     onClick={() => handleProjectClick(project.id)}
@@ -273,6 +320,15 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                       <div className="font-semibold text-gray-900">{project.name}</div>
                       <div className="text-xs text-gray-500">Inicia: {project.start_date}</div>
                     </td>
+
+                    {showOrganizerColumn && (
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-medium text-gray-800">
+                          {allOngsMap.get(project.owner_id) || 'Desconocida'}
+                        </span>
+                      </td>
+                    )}
+                    
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-700 max-w-xs">{project.description}</div>
                     </td>
@@ -292,14 +348,12 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                     </td>
                   </tr>
 
-                  {/* === FILA DESPLEGABLE (TAREAS) === */}
                   {expandedProjectId === project.id && (
                     <tr className="bg-violet-50">
-                      <td colSpan={5} className="p-0">
+                      <td colSpan={showOrganizerColumn ? 6 : 5} className="p-0">
                         <div className="p-4 overflow-hidden transition-all duration-300 ease-in-out">
                           <h4 className="text-base font-semibold text-violet-800 mb-3 ml-2">Tareas del Proyecto</h4>
                           
-                          {/* Tabla Anidada de Tareas */}
                           <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
                             <table className="w-full">
                               <thead className="bg-gray-100">
@@ -332,7 +386,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
                                     {showCommitActions && (
                                       <td className="px-4 py-3">
                                         <button
-                                          onClick={() => handleCommit(task)}
+                                          onClick={() => handleCommit(task, project.name)}
                                           className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors shadow-sm"
                                         >
                                           Comprometer
@@ -354,7 +408,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
           </table>
         </div>
 
-        {/* 🔽 --- SECCIÓN DE PAGINACIÓN (RESTAURADA) --- 🔽 */}
         {totalPages > 1 && (
           <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
             <div className="flex items-center justify-between">
@@ -395,11 +448,9 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             </div>
           </div>
         )}
-        {/* 🔼 --- FIN DE SECCIÓN DE PAGINACIÓN --- 🔼 */}
       </div>
 
-      {/* Modal para Comprometer Ayuda */}
-      {showCommitActions && showCommitModal && selectedTask && (
+      {showCommitActions && showCommitModal && selectedCommitData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
@@ -407,12 +458,14 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             </h3>
             <div className="mb-6">
               <div className="bg-violet-50 rounded-lg p-4 mb-4">
-                <p className="text-sm font-semibold text-violet-900 mb-1">Tarea:</p>
-                <p className="text-gray-700 font-bold">{selectedTask.title}</p>
+                <p className="text-sm font-semibold text-violet-900 mb-1">Proyecto:</p>
+                <p className="text-gray-700 font-bold">{selectedCommitData.projectName}</p>
+                <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Tarea:</p>
+                <p className="text-gray-700 font-bold">{selectedCommitData.task.title}</p>
                 <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Pedido:</p>
-                <p className="text-gray-700">{selectedTask.necessity}</p>
+                <p className="text-gray-700">{selectedCommitData.task.necessity}</p>
                 <p className="text-sm font-semibold text-violet-900 mb-1 mt-2">Cantidad:</p>
-                <p className="text-gray-700">{selectedTask.quantity}</p>
+                <p className="text-gray-700">{selectedCommitData.task.quantity}</p>
               </div>
               
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -421,10 +474,11 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
               <select
                 value={selectedOrgId || ''}
                 onChange={(e) => setSelectedOrgId(Number(e.target.value))}
+                disabled={isSubmitting}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-violet-500 focus:border-transparent"
               >
                 <option value="">-- Selecciona una organización --</option>
-                {ongInfoData.map(org => (
+                {myOngs.map(org => (
                   <option key={org.id} value={org.id}>
                     {org.name}
                   </option>
@@ -435,18 +489,28 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={confirmCommit}
-                disabled={!selectedOrgId}
-                className="flex-1 px-6 py-3 bg-violet-600 text-white rounded-lg font-semibold hover:bg-violet-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!selectedOrgId || isSubmitting}
+                className="flex-1 px-6 py-3 bg-violet-600 text-white rounded-lg font-semibold hover:bg-violet-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
               >
-                Confirmar Compromiso
+                 {isSubmitting ? (
+                    <>
+                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                     </svg>
+                     Procesando...
+                    </>
+                ) : 'Confirmar Compromiso'}
               </button>
+              
               <button
                 onClick={() => {
                   setShowCommitModal(false);
                   setSelectedOrgId(null);
-                  setSelectedTask(null);
+                  setSelectedCommitData(null);
                 }}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
+                disabled={isSubmitting}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>
@@ -455,7 +519,6 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
         </div>
       )}
 
-      {/* Mensaje si no hay resultados */}
       {currentProjects.length === 0 && (
          <div className="bg-white rounded-2xl shadow-xl p-12 text-center mt-8">
           <div className="text-6xl mb-4">🔭</div>

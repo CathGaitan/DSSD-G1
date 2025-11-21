@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import Home from './pages/Home'
 import Layout from './components/Layout'
 import CreateProjectForm from './forms/CreateProjectForm'
@@ -8,6 +7,9 @@ import LoginForm from './forms/LoginForm';
 import ShowProjectsCloud from './pages/ShowProjectsCloud';
 import ShowProjectsLocal from './pages/ShowProjectsLocal';
 import Observations from './pages/Observations';
+import SelectRequest from './pages/SelectRequest';
+import ProtectedRoute from './components/ProtectedRoute'; // <-- IMPORTADO
+import ShowCollaborationRequest from './pages/ShowCollaborationRequest';
 
 function App() {
   return (
@@ -15,19 +17,20 @@ function App() {
       <Layout>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/create-project" element={<CreateProjectForm />} />
           <Route path="/register" element={<RegisterForm />} />
-          <Route path="/login" element={<LoginForm onLoginSuccess={(token) => {
-            localStorage.setItem("token", token);
+          <Route path="/login" element={<LoginForm onLoginSuccess={(_token) => {
             window.location.href = "/";
           }} onRegister={() => {
             window.location.href = "/register";
           }} />} />
-          {/* <Route path="/projects" element={<Projects />} /> */}
-          {/* <Route path="/login" element={<LoginForm />} /> */}
-          <Route path="/cloud-projects" element={<ShowProjectsCloud />} />
-          <Route path="/local-projects" element={<ShowProjectsLocal />} />
-          <Route path="/observations" element={<Observations />} />
+          
+          <Route path="/create-project" element={<ProtectedRoute authTier="local"><CreateProjectForm /></ProtectedRoute>} />
+          <Route path="/local-projects" element={<ProtectedRoute authTier="local"><ShowProjectsLocal /></ProtectedRoute>} />
+          
+          <Route path="/cloud-projects" element={<ProtectedRoute authTier="cloud"><ShowProjectsCloud /></ProtectedRoute>} />
+          <Route path="/colaboration-requests" element={<ProtectedRoute authTier="cloud"><ShowCollaborationRequest /></ProtectedRoute>} />
+          <Route path="/observations" element={<ProtectedRoute authTier="cloud"><Observations /></ProtectedRoute>} />
+          <Route path="/select-requests" element={<ProtectedRoute authTier="cloud"><SelectRequest /></ProtectedRoute>} />
         </Routes>
       </Layout>
     </Router>

@@ -17,6 +17,8 @@ interface TaskCardProps {
   };
   onChange: (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onRemove: (index: number) => void;
+  // --- NUEVA PROP ---
+  isLocalOnly: boolean;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ 
@@ -25,11 +27,18 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   canRemove,
   taskErrors,
   onChange, 
-  onRemove 
+  onRemove,
+  // --- Destructuramos ---
+  isLocalOnly 
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     onChange(index, e);
   };
+  
+  // --- Lógica para forzar el estado en modo local ---
+  const isResolvesByItselfChecked = isLocalOnly ? true : task.resolves_by_itself;
+  const isResolvesByItselfDisabled = isLocalOnly;
+  // ----------------------------------------------------
 
   return (
     <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-6 rounded-xl border-2 border-gray-200 hover:border-purple-300 transition-colors">
@@ -103,12 +112,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           <input
             type="checkbox"
             name="resolves_by_itself"
-            checked={task.resolves_by_itself}
+            // --- Aplicamos el estado y la deshabilitación condicionales ---
+            checked={isResolvesByItselfChecked} 
             onChange={handleChange}
-            className="w-4 h-4 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+            disabled={isResolvesByItselfDisabled}
+            // Agregamos estilo para el estado deshabilitado
+            className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-2 focus:ring-purple-500 disabled:opacity-50"
           />
-          <label className="text-sm text-gray-700">¿Como ONG resolverá esta tarea por sí misma?</label>
+          <label className={`text-sm text-gray-700 ${isResolvesByItselfDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+            ¿Como ONG resolverá esta tarea por sí misma?
+          </label>
         </div>
+        
+        {/* Mensaje adicional para el usuario en modo local */}
+        {isLocalOnly && (
+            <p className="text-xs text-purple-600 mt-1">
+                * El modo de aplicación local requiere que todas las tareas se resuelvan internamente.
+            </p>
+        )}
       </div>
     </div>
   );

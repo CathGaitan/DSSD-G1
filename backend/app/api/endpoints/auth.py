@@ -40,5 +40,4 @@ def login(
             result["cloud_access_token"] = cloud_response.json().get("access_token")
         else:
             result["cloud_error"] = "Error al autenticar en Cloud"
-
     return result
