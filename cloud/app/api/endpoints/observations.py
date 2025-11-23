@@ -5,6 +5,7 @@ from app.schemas.observation_schema import ObservationBase
 from app.schemas.user_schema import UserResponse
 from app.services.auth_service import get_current_user
 from app.services.observation_service import ObservationService
+from fastapi import Body
 
 router = APIRouter()
 
@@ -19,3 +20,9 @@ async def save_observation(observation: ObservationBase, db: Session = Depends(g
 async def get_my_observations(db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     observation_service = ObservationService(db)
     return observation_service.get_my_observations(current_user)
+
+
+@router.post("/accept_observation", response_model=dict, status_code=status.HTTP_200_OK)
+async def accept_observation(observation_id: int = Body(..., embed=True), db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+    observation_service = ObservationService(db)
+    return observation_service.accept_observation(observation_id)

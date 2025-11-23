@@ -6,6 +6,7 @@ class ObservationBase(BaseModel):
     content: str
     user_id: int
     created_at: datetime
+    accepted_at: datetime | None = None
     project_name: str
 
     model_config = {

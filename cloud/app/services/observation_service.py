@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from datetime import datetime
 from app.schemas.user_schema import UserResponse
 from app.repositories.observation_repository import ObservationRepository
 from app.schemas.observation_schema import ObservationBase, ObservationResponse
@@ -34,3 +35,12 @@ class ObservationService:
                 "username": obs.user.username if obs.user else "Usuario Desconocido"
             })
         return result
+
+    def accept_observation(self, observation_id: int) -> dict:
+        obs = self.observation_repo.get_by_id(observation_id)
+        update_data = {
+            "status": "accepted",
+            "accepted_at": datetime.now()
+        }
+        self.observation_repo.update(obs, update_data)
+        return {"message": "Observation accepted successfully", "observation_id": obs.id}

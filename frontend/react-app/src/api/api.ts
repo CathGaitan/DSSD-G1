@@ -298,4 +298,21 @@ export const api = {
       return response.json();
     },
 
+    //POST: Aceptar una observación (Backend Local -> Bonita)
+    acceptObservation: async (observationId: number) => {
+      const local_token = localStorage.getItem('local_token');
+      const response = await fetch(`${BASE_LOCAL_URL}/observations/accept_observation`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              "Authorization": `Bearer ${local_token}`,
+          },
+          body: JSON.stringify({
+              observation_id: observationId,
+          }),
+      });
+      if (!response.ok) throw new Error('Error al aceptar la observación');
+      return response.json();
+    }
+
 };

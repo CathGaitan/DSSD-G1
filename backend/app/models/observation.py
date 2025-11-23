@@ -13,7 +13,7 @@ class Observation(Base):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     status= Column(Text, default="pending", nullable=False)
-    accepted_at = Column(DateTime, nullable=True)
+    case_id = Column(Integer, nullable=True)
 
     project = relationship("Project", backref="observations")
     user = relationship("User", backref="observations")
