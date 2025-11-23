@@ -79,19 +79,33 @@ const ShowObservationsONG: React.FC = () => {
           {
             header: "Acciones",
             width: "w-1/6",
-            render: (obs: Observation) => (
-              <button
-                // Cambiamos la llamada directa por la apertura del modal
-                onClick={() => handleOpenModal(obs.id)}
-                className="group flex items-center gap-2 px-4 py-2 bg-white border border-green-200 rounded-lg text-green-700 hover:bg-green-50 hover:border-green-300 transition-all shadow-sm hover:shadow-md"
-                title="Aceptar Observación"
-              >
-                <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                  ✓
-                </div>
-                <span className="text-sm font-medium">Aceptar</span>
-              </button>
-            )
+            render: (obs: Observation) => {
+              // LOGICA CONDICIONAL AGREGADA
+              if (obs.status === 'accepted') {
+                return (
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Aceptada el:</span>
+                    <span className="text-sm text-gray-700">
+                      {obs.accepted_at ? new Date(obs.accepted_at).toLocaleDateString() : '-'}
+                    </span>
+                  </div>
+                );
+              }
+
+              return (
+                <button
+                  // Cambiamos la llamada directa por la apertura del modal
+                  onClick={() => handleOpenModal(obs.id)}
+                  className="group flex items-center gap-2 px-4 py-2 bg-white border border-green-200 rounded-lg text-green-700 hover:bg-green-50 hover:border-green-300 transition-all shadow-sm hover:shadow-md"
+                  title="Aceptar Observación"
+                >
+                  <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                    ✓
+                  </div>
+                  <span className="text-sm font-medium">Aceptar</span>
+                </button>
+              );
+            }
           }
         ]}
       />

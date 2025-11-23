@@ -30,6 +30,7 @@ class ObservationService:
                 "content": obs.content,
                 "user_id": obs.user_id,
                 "created_at": obs.created_at,
+                "accepted_at": obs.accepted_at,
                 "status": obs.status,
                 "project_name": obs.project.name if obs.project else "Desconocido",
                 "username": obs.user.username if obs.user else "Usuario Desconocido"

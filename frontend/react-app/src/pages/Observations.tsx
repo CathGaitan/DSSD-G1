@@ -3,6 +3,7 @@ import { api } from '../api/api';
 import { type ShowProject } from '../types/project.types';
 import { type Task } from '../types/task.types';
 import { type Ong } from '../types/ong.types';
+import { Alert, useAlert } from '../components/ui/Alert'; // <--- 1. Importamos el componente y el hook
 
 // --- Constantes de Paginación ---
 const ITEMS_PER_PAGE = 5; // Proyectos por página
@@ -26,6 +27,9 @@ const Observations: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<ShowProject | null>(null);
   const [observationText, setObservationText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- Hook de Alertas ---
+  const { alert, showAlert, closeAlert } = useAlert();
 
   // --- Carga de Datos ---
   useEffect(() => {
@@ -53,7 +57,7 @@ const Observations: React.FC = () => {
       }
     };
     fetchProjectsAndOngs();
-  }, []); // El array vacío asegura que se ejecute solo una vez
+  }, []); 
 
   // --- Manejadores de Eventos ---
   const handleProjectClick = (projectId: number) => {
@@ -76,29 +80,28 @@ const Observations: React.FC = () => {
   const handleSubmitObservation = async () => {
     if (!selectedProject || !observationText.trim()) return;
     
-    // Nueva validación simple de longitud (ajustada al mínimo de 10 caracteres)
+    // 3. Reemplazamos el alert de validación
     if (observationText.trim().length < 10) {
-        alert("La observación debe tener al menos 10 caracteres.");
+        showAlert('warning', "La observación debe tener al menos 10 caracteres.");
         return;
     }
     
     setIsSubmitting(true);
     try {
       const projectName = selectedProject.name;
-      const ongId = selectedProject.owner_id; // Extraemos el ID de la ONG
+      const ongId = selectedProject.owner_id; 
 
       // Enviamos texto, nombre del proyecto y el ID de la ONG
       await api.sendObservation(observationText, projectName.trim(), ongId);
 
       console.log("Observación enviada:", { projectName: projectName, observationText, ongId });
-      alert("Observación enviada con éxito!");
-      handleCloseModal();
+      showAlert('success', "Observación enviada con éxito!");
       
-      // Opcional: Recargar los proyectos si fuera necesario
+      handleCloseModal();
       
     } catch (err: any) {
         console.error("Error al enviar la observación:", err);
-        alert(err.message || "Error al enviar la observación. Intenta de nuevo.");
+        showAlert('error', err.message || "Error al enviar la observación. Intenta de nuevo.");
     } finally {
       setIsSubmitting(false);
     }
@@ -144,6 +147,15 @@ const Observations: React.FC = () => {
 
   return (
     <div className="w-full">
+      {/* 6. Renderizamos el componente Alert si está activo */}
+      {alert.show && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={closeAlert}
+        />
+      )}
+
       {/* Header de la página */}
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -160,7 +172,6 @@ const Observations: React.FC = () => {
           <table className="w-full">
             {/* Cabecera de la tabla */}
             <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
-              {}
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Proyecto</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">ONG Dueña</th>
@@ -191,7 +202,6 @@ const Observations: React.FC = () => {
                       className="hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => handleProjectClick(project.id)}
                     >
-                      {}
                       <td className="px-6 py-4"><div className="font-semibold text-gray-900">{project.name}</div></td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-700">
