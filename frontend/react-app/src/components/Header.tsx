@@ -17,7 +17,9 @@ const Header: React.FC = () => {
     { path: '/cloud-projects', label: 'Mis tareas en cloud', icon: '' },
     { path: '/colaboration-requests', label: 'Pedidos colaboración', icon: '' },
     { path: '/select-requests', label: 'Elegir pedido', icon: '' },
-    { path: '/observations', label: 'Observaciones', icon: '' },
+    { path: '/show_obs_ong', label: 'Observaciones', icon: '' },
+    { path: '/observations', label: 'Enviar observaciones', icon: '' },
+    { path: '/show_obs_manager', label: 'Mis observaciones', icon: '' },
   ];
 
   const visibleNavItems = navItems.filter((item) => {

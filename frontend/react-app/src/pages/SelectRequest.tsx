@@ -218,7 +218,7 @@ const SelectRequest: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              📋 Elegir Pedido
+              Elegir Pedido
             </h1>
             <p className="text-lg text-gray-600">
               Gestiona las postulaciones de otras ONGs a tus proyectos.

@@ -17,7 +17,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
   fetchProjects,
   showCommitActions = false,
   showOrganizerColumn = true, 
-  title = '📋 Pedidos de Colaboración',
+  title = 'Pedidos de Colaboración',
   subtitle = 'Gestiona y responde a las necesidades de los proyectos comunitarios'
 }) => {
   // --- Estados ---
