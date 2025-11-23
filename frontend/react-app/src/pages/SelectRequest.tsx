@@ -126,6 +126,9 @@ const SelectRequest: React.FC = () => {
         showAlert('success', `¡La ONG ${selectionData.ongName} ha sido seleccionada con éxito!`);
         setShowModal(false);
         setSelectionData(null);
+        setTimeout(() => {
+          window.location.reload();
+          }, 1500);
 
     } catch (error: any) {
         console.error(error);

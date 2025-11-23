@@ -116,6 +116,9 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
         
         const projectsData = await fetchProjects();
         setProjects(projectsData);
+        setTimeout(() => {
+          window.location.reload();
+          }, 1500);
         
       } catch (error) {
         console.error('Error al comprometer la ayuda:', error);
