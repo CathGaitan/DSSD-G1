@@ -7,7 +7,7 @@ const ShowObservationsManager: React.FC = () => {
     <ShowObservationsBase
       title="Mis Observaciones Enviadas"
       subtitle="Historial de comentarios y correcciones que has enviado a otros proyectos."
-      fetchData={api.getSentObservations}
+      fetchData={api.getMyObservationsManager}
     />
   );
 };

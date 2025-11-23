@@ -73,7 +73,7 @@ export const ShowObservationsBase: React.FC<ShowObservationsBaseProps> = ({
             <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Proyecto</th>
-                <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Fecha</th>
+                <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Fecha Creación</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider">Estado</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold uppercase tracking-wider w-1/3">Comentario</th>
                 {extraColumns.map((col, idx) => (
@@ -99,20 +99,30 @@ export const ShowObservationsBase: React.FC<ShowObservationsBaseProps> = ({
                       <div className="font-bold text-gray-900">{obs.project_name}</div>
                     </td>
                     
-                    {/* Columna: Fecha */}
+                    {/* Columna: Fecha Creación */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
                         {new Date(obs.created_at).toLocaleDateString()}
                       </span>
                     </td>
 
-                    {/* Columna: Estado (Nueva) */}
+                    {/* Columna: Estado (MODIFICADA) */}
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        obs.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                      }`}>
-                        {obs.status}
-                      </span>
+                      <div className="flex flex-col items-start gap-1">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          obs.status === 'accepted' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {obs.status === 'accepted' ? 'Aceptada' : 'Pendiente'}
+                        </span>
+                        {/* Aquí mostramos la fecha si está aceptada */}
+                        {obs.status === 'accepted' && obs.accepted_at && (
+                          <span className="text-xs text-gray-500 font-medium ml-0.5">
+                            {new Date(obs.accepted_at).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Columna: Comentario */}

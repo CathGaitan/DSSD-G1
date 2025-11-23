@@ -313,6 +313,19 @@ export const api = {
       });
       if (!response.ok) throw new Error('Error al aceptar la observación');
       return response.json();
-    }
+    },
+
+    //GET: Obtener observaciones que realize como manager
+    getMyObservationsManager: async () => {
+      const cloud_token = localStorage.getItem('cloud_token');
+      const response = await fetch(`${BASE_CLOUD_URL}/api/observations/my_observations_manager`, {
+          headers: {
+              "Authorization": `Bearer ${cloud_token}`,
+          },
+      });
+      if (!response.ok) throw new Error('Error al obtener proyectos con solicitudes');
+      return response.json();
+    },
+
 
 };

@@ -18,3 +18,11 @@ class ObservationRepository(BaseRepository):
             .order_by(Observation.created_at.desc())
             .all()
         )
+
+    def get_by_user_id(self, user_id: int) -> List[Observation]:
+        return (
+            self.db.query(Observation)
+            .filter(Observation.user_id == user_id)
+            .order_by(Observation.created_at.desc())
+            .all()
+        )

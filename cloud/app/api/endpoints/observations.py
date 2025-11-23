@@ -26,3 +26,8 @@ async def get_my_observations(db: Session = Depends(get_db), current_user: UserR
 async def accept_observation(observation_id: int = Body(..., embed=True), db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     observation_service = ObservationService(db)
     return observation_service.accept_observation(observation_id)
+
+@router.get("/my_observations_manager", response_model=list[dict], status_code=status.HTTP_200_OK)
+async def my_obserbations_manager(db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+    observation_service = ObservationService(db)
+    return observation_service.get_user_sent_observations(current_user.id)

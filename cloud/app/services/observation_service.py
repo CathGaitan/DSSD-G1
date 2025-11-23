@@ -45,3 +45,19 @@ class ObservationService:
         }
         self.observation_repo.update(obs, update_data)
         return {"message": "Observation accepted successfully", "observation_id": obs.id}
+
+    def get_user_sent_observations(self, user_id: int) -> list[dict]:
+        observations = self.observation_repo.get_by_user_id(user_id)
+        result = []
+        for obs in observations:
+            result.append({
+                "id": obs.id,
+                "content": obs.content,
+                "user_id": obs.user_id,
+                "created_at": obs.created_at,
+                "status": obs.status,
+                "accepted_at": obs.accepted_at,
+                "project_name": obs.project.name if obs.project else "Desconocido",
+                "username": obs.user.username if obs.user else "Usuario Desconocido"
+            })
+        return result
