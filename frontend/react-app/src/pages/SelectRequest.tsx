@@ -110,32 +110,32 @@ const SelectRequest: React.FC = () => {
   };
 
   const handleConfirmSelection = async () => {
-    if (!selectionData) return;
-    
-    setIsSubmitting(true);
-    try {
-        const localProject = await api.getLocalProjectByName(selectionData.projectName);
-        
-        if (!localProject || !localProject.id) {
-            throw new Error('No se pudo sincronizar con el proyecto local.');
-        }
+      if (!selectionData) return;
+      
+      setIsSubmitting(true);
+      try {
+          const localProject = await api.getLocalProjectByName(selectionData.projectName);
+          
+          if (!localProject || !localProject.id) {
+              throw new Error('No se pudo sincronizar con el proyecto local.');
+          }
 
-        await api.selectOngForTask(selectionData.task.id, selectionData.ongId, localProject.id);        
-        await loadProjectsAndCompromises(Number(selectedOngId));
-        
-        showAlert('success', `¡La ONG ${selectionData.ongName} ha sido seleccionada con éxito!`);
-        setShowModal(false);
-        setSelectionData(null);
-        setTimeout(() => {
-          window.location.reload();
-          }, 1500);
+          await api.selectOngForTask(selectionData.task.id, selectionData.ongId, localProject.id);        
+          
+          await new Promise(resolve => setTimeout(resolve, 2000));
 
-    } catch (error: any) {
-        console.error(error);
-        showAlert('error', error.message || "Error al seleccionar la ONG");
-    } finally {
-        setIsSubmitting(false);
-    }
+          await loadProjectsAndCompromises(Number(selectedOngId));
+          
+          showAlert('success', `¡La ONG ${selectionData.ongName} ha sido seleccionada con éxito!`);
+          setShowModal(false);
+          setSelectionData(null);
+
+      } catch (error: any) {
+          console.error(error);
+          showAlert('error', error.message || "Error al seleccionar la ONG");
+      } finally {
+          setIsSubmitting(false);
+      }
   };
 
   const getTaskCompromises = (taskId: number) => {

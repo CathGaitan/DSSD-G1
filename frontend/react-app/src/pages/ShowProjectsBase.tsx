@@ -94,7 +94,7 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
     setShowCommitModal(true);
   };
 
-  const confirmCommit = async () => {
+const confirmCommit = async () => {
     if (selectedCommitData && selectedOrgId) {
       setIsSubmitting(true);
       const { task, projectName } = selectedCommitData;
@@ -104,27 +104,25 @@ const ShowProjectsBase: React.FC<ShowProjectsBaseProps> = ({
         const localProject = await api.getLocalProjectByName(projectName);
         localProjectId = localProject.id;
         
-        if (!localProjectId) {
-             throw new Error('No se pudo obtener el ID local del proyecto. No se puede comprometer la tarea.');
-        }
+        if (!localProjectId) throw new Error('No se pudo obtener el ID local...');
 
         await api.commitTaskToOng(task.id, selectedOrgId, localProjectId);
+        
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Actualizar datos
+        const projectsData = await fetchProjects();
+        setProjects(projectsData);
         
         setShowCommitModal(false);
         setSelectedOrgId(null);
         setSelectedCommitData(null);
         
-        const projectsData = await fetchProjects();
-        setProjects(projectsData);
-        setTimeout(() => {
-          window.location.reload();
-          }, 1500);
-        
       } catch (error) {
         console.error('Error al comprometer la ayuda:', error);
         alert('Error al guardar el compromiso. Intenta de nuevo.');
       } finally {
-        setIsSubmitting(false); // <--- DESACTIVAR CARGA
+        setIsSubmitting(false); 
       }
     }
   };

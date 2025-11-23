@@ -7,18 +7,21 @@ interface ColumnConfig {
   width?: string;
 }
 
+// 1. Agregamos refreshTrigger como prop opcional
 interface ShowObservationsBaseProps {
   title: string;
   subtitle: string;
   fetchData: () => Promise<any[]>;
   extraColumns?: ColumnConfig[];
+  refreshTrigger?: number; // <--- NUEVO: Recibimos el contador
 }
 
 export const ShowObservationsBase: React.FC<ShowObservationsBaseProps> = ({
   title,
   subtitle,
   fetchData,
-  extraColumns = []
+  extraColumns = [],
+  refreshTrigger = 0 // <--- Valor por defecto para no romper otros usos
 }) => {
   const [observations, setObservations] = useState<Observation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,9 +40,10 @@ export const ShowObservationsBase: React.FC<ShowObservationsBaseProps> = ({
     }
   };
 
+  // 2. Agregamos refreshTrigger a las dependencias del useEffect
   useEffect(() => {
     loadData();
-  }, []);
+  }, [refreshTrigger]); // <--- ¡CLAVE! Esto hace que se recargue cuando cambia el número
 
   if (loading) {
     return (
@@ -106,7 +110,7 @@ export const ShowObservationsBase: React.FC<ShowObservationsBaseProps> = ({
                       </span>
                     </td>
 
-                    {/* Columna: Estado (MODIFICADA) */}
+                    {/* Columna: Estado */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-col items-start gap-1">
                         <span className={`px-2 py-1 rounded text-xs font-semibold ${
@@ -116,7 +120,6 @@ export const ShowObservationsBase: React.FC<ShowObservationsBaseProps> = ({
                         }`}>
                           {obs.status === 'accepted' ? 'Aceptada' : 'Pendiente'}
                         </span>
-                        {/* Aquí mostramos la fecha si está aceptada */}
                         {obs.status === 'accepted' && obs.accepted_at && (
                           <span className="text-xs text-gray-500 font-medium ml-0.5">
                             {new Date(obs.accepted_at).toLocaleDateString()}

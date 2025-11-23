@@ -9,6 +9,9 @@ const ShowObservationsONG: React.FC = () => {
   const [selectedObsId, setSelectedObsId] = useState<number | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Estado para forzar la recarga del componente hijo
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
   // Hook de alertas personalizado
   const { alert, showAlert, closeAlert } = useAlert();
 
@@ -30,11 +33,14 @@ const ShowObservationsONG: React.FC = () => {
     try {
         await api.acceptObservation(selectedObsId);
         
+        // ⏳ Espera asíncrona para dar tiempo al backend a procesar
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
         showAlert('success', 'Observación aceptada correctamente');
         handleCloseModal();
-        setTimeout(() => {
-            window.location.reload(); 
-        }, 1500);
+        
+        // Disparamos la actualización del componente hijo
+        setRefreshTrigger(prev => prev + 1);
 
     } catch (error) {
         console.error(error);
@@ -59,6 +65,7 @@ const ShowObservationsONG: React.FC = () => {
         title="Gestión de Observaciones Recibidas"
         subtitle="Revisa y acepta las observaciones realizadas por colaboradores."
         fetchData={api.getMyObservations}
+        refreshTrigger={refreshTrigger}
         extraColumns={[
           {
             header: "Usuario",
