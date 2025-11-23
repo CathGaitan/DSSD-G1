@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Boolean
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from app.models.user_ong import user_ongs
@@ -11,6 +11,7 @@ class User(Base):
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(120), unique=True, nullable=False, index=True)
     hashed_password = Column(String(128), nullable=False)
+    is_manager = Column(Boolean, default=False, nullable=False)
 
     ongs = relationship("Ong", secondary=user_ongs, back_populates="users")
 

@@ -108,3 +108,11 @@ class UserService:
                                 detail="Usuario no encontrado.")
         self.user_repo.delete(user)
         return True
+
+    def toggle_is_manager(self, user_id: int) -> UserResponse:
+        user = self.user_repo.get_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
+                                detail="Usuario no encontrado.")
+        self.user_repo.update(user, {"is_manager": not user.is_manager})
+        return user

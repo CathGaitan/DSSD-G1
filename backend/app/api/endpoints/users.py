@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from app.schemas.user_schema import UserCreate, UserResponse
 from sqlalchemy.orm import Session
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_current_user, get_current_manager_user
 from app.core.database import get_db
 from app.services.user_service import UserService
 
@@ -22,6 +22,11 @@ def get_users(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
 def get_me(current_user: UserResponse = Depends(get_current_user)):
     return current_user
 
+# Get current user if manager
+@router.get("/me/manager", response_model=UserResponse)
+def get_me_if_manager(current_user: UserResponse = Depends(get_current_manager_user)):
+    return current_user
+
 # Create a new user
 @router.post("/create", response_model=UserResponse, status_code=201)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
@@ -32,6 +37,11 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
 def delete_user(user_id: int, db: Session = Depends(get_db)):
     UserService(db).delete_user(user_id)  
     return
+
+# Toggle is manager
+@router.post("/{user_id}", status_code=200)
+def toggle_is_manager(user_id: int, db: Session = Depends(get_db)):
+    return UserService(db).toggle_is_manager(user_id)
 
 # Get ONGs associated with a user
 @router.get("/{user_id}/ongs", response_model=List[OngResponse])

@@ -47,3 +47,4 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     id: int
     ongs: Optional[List[OngResponse]] = []  # para mostrar a qué ONGs pertenece el usuario
+    is_manager: bool
