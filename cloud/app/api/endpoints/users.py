@@ -61,3 +61,12 @@ def disassociate_user_from_ong(user_id: int, ong_id: int, db: Session = Depends(
     except HTTPException as e:
         raise e
     return {"message": "User disassociated from ONG successfully"}
+
+
+@router.get("/{user_id}/email", response_model=dict)
+def get_email_by_user_id(user_id: int, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+    user_service = UserService(db)
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"email": user.email}

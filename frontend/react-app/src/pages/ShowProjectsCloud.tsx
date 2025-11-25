@@ -9,7 +9,7 @@ const ShowProjectsCloud: React.FC = () => {
     <ShowProjectsBase
       fetchProjects={fetchProjects}
       showCommitActions={false}
-      title="📋 Mis tareas en cloud"
+      title="Mis tareas en cloud"
       subtitle="Visualiza las tareas que has creado en la nube"
     />
   );
