@@ -2,6 +2,7 @@ from app.models.project import Project
 from app.repositories.base_repository import BaseRepository
 from app.models.task import Task
 from typing import List
+from sqlalchemy import func
 
 
 class ProjectRepository(BaseRepository):
@@ -27,5 +28,19 @@ class ProjectRepository(BaseRepository):
             .filter(self.model.owner_id.in_(owner_ids))
             .join(Task)
             .distinct()
+            .all()
+        )
+
+    def get_projects_solved_without_collaboration(self) -> list[Project]:
+        # Lógica para obtener proyectos que se resolvieron sin colaboración de otras ONG
+        # Retorna los proyectos donde TODAS sus tasks tienen resolves_by_itself = True
+        return (
+            self.db.query(self.model)
+            .join(Task)
+            .group_by(self.model.id)
+            .having(
+                func.sum(func.case((Task.resolves_by_itself == True, 1), else_=0)) ==
+                func.count(Task.id)
+            )
             .all()
         )

@@ -94,3 +94,36 @@ class BonitaClient:
             return {"error": "Variable not found"}
         response.raise_for_status()
         return response.json()
+
+    # Metodos para elaborar los indicadores para el dashboard de usuarios gerenciales
+    def get_cases_by_process_id(self, process_id):
+        url = f"{self.base_url}/API/bpm/case?p=0&c=1000&f=processId={process_id}"
+        response = self.session.get(url)
+        response.raise_for_status()
+        return response.json()
+    
+    def count_cases(self, process_id):
+        url = f"{self.base_url}/API/bpm/case/count?f=processId={process_id}"
+        response = self.session.get(url)
+        response.raise_for_status()
+        return response.json().get("count", 0)
+
+    def count_open_cases(self, process_id):
+        url = f"{self.base_url}/API/bpm/case/countOpenCases?f=processId={process_id}"
+        response = self.session.get(url)
+        response.raise_for_status()
+        return response.json().get("count", 0)
+    
+    def count_closed_cases(self, process_id):
+        url = f"{self.base_url}/API/bpm/case/countClosedCases?f=processId={process_id}"
+        response = self.session.get(url)
+        response.raise_for_status()
+        return response.json().get("count", 0)
+    
+    # De Prueba, no se si es correcto este endpoint 
+    def count_completed_cases(self, process_id):
+        url = f"{self.base_url}/API/bpm/case/countCompletedCases?f=processId={process_id}"
+        response = self.session.get(url)
+        response.raise_for_status()
+        return response.json().get("count", 0)
+    
