@@ -25,7 +25,7 @@ class BonitaClient:
             self.logged_in = True
             return {"X-Bonita-API-Token": token}
         raise Exception("No se obtuvo token de sesión de Bonita.")
-
+    
     def get_all_processes(self):
         url = f"{self.base_url}/API/bpm/process?p=0&c=100"
         response = self.session.get(url)
@@ -79,6 +79,7 @@ class BonitaClient:
         response.raise_for_status()
         return "Variable set successfully"
 
+    # Solo para variables de casos abiertos
     def get_variable(self, case_id, variable_name):
         url = f"{self.base_url}/API/bpm/caseVariable/{case_id}/{variable_name}"
         response = self.session.get(url)
@@ -96,34 +97,35 @@ class BonitaClient:
         return response.json()
 
     # Metodos para elaborar los indicadores para el dashboard de usuarios gerenciales
+    # Este no logré saber si anda o no
+    def ensure_logged(self):
+        """Intenta re-loguear si la sesión expiró"""
+        if not self.logged_in:
+            self.login()
+    
+
+    # anda, pero obtiene solo los abiertos
     def get_cases_by_process_id(self, process_id):
         url = f"{self.base_url}/API/bpm/case?p=0&c=1000&f=processId={process_id}"
         response = self.session.get(url)
+        # debug
+        if not response.ok:
+            print("ERROR Bonita:", response.status_code, response.text)
+    
         response.raise_for_status()
         return response.json()
-    
-    def count_cases(self, process_id):
-        url = f"{self.base_url}/API/bpm/case/count?f=processId={process_id}"
-        response = self.session.get(url)
-        response.raise_for_status()
-        return response.json().get("count", 0)
 
-    def count_open_cases(self, process_id):
-        url = f"{self.base_url}/API/bpm/case/countOpenCases?f=processId={process_id}"
+    def get_archived_cases(self, process_id):
+        # 1) obtener todos los archivedCase (cerrados)
+        url = f"{self.base_url}/API/bpm/archivedCase?p=0&c=1000"
         response = self.session.get(url)
         response.raise_for_status()
-        return response.json().get("count", 0)
-    
-    def count_closed_cases(self, process_id):
-        url = f"{self.base_url}/API/bpm/case/countClosedCases?f=processId={process_id}"
+        return response.json()
+    # Sirve para obtener variables de casos archivados
+    def get_variable_from_archived_case(self, archived_case_id, variable_name):
+        url = f"{self.base_url}/API/bpm/archivedCaseVariable/{archived_case_id}/{variable_name}"
         response = self.session.get(url)
+        if response.status_code == 404:
+            return {"error": "Variable not found"}
         response.raise_for_status()
-        return response.json().get("count", 0)
-    
-    # De Prueba, no se si es correcto este endpoint 
-    def count_completed_cases(self, process_id):
-        url = f"{self.base_url}/API/bpm/case/countCompletedCases?f=processId={process_id}"
-        response = self.session.get(url)
-        response.raise_for_status()
-        return response.json().get("count", 0)
-    
+        return response.json()
