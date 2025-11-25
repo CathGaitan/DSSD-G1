@@ -33,7 +33,7 @@ def get_successful_on_time_avg(
         raise HTTPException(status_code=500, detail=str(e)) 
 
 # Indicador de Porcentaje de proyectos que no necesitaron colaboración de ONG
-@router.get("/percent-no-collaboration-needed", response_model=float)
+@router.get("/percent-no-collaboration-needed", response_model=dict)
 def get_percent_no_collaboration_needed(
     db: Session = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user)

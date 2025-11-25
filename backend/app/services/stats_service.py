@@ -141,9 +141,9 @@ class StatsService:
         except Exception as e:
             logger.error("Error obteniendo proyectos sin colaboración: %s", e)
             raise
-        result = (projects_no_collab / total_projects) * 100
-        logger.info("Porcentaje de proyectos sin colaboración: %.2f%%", result)
-        return result
+        # result = (projects_no_collab / total_projects) * 100
+        # result es un dict con projects_no_collab y total_projects
+        return {"projects_no_collab": projects_no_collab, "total_projects": total_projects, "percent": (projects_no_collab / total_projects) * 100}
 
     def get_top_3_ongs(self):
         # Lógica para obtener las 3 ONG con mejor desempeño
