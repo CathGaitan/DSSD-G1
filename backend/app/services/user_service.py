@@ -67,13 +67,7 @@ class UserService:
         user = self.user_repo.get_by_username(username)
         if user and pwd_context.verify(password, user.hashed_password):
             user = UserResponse.model_validate(user)
-            if(user.is_manager):
-                usuario = os.getenv("BONITA_USER_MANAGER", "favio.riviera")
-                password = os.getenv("BONITA_USER_MANAGER_PASSWORD", "bpm")
-            else:
-                usuario = os.getenv("BONITA_USER_COLABORATOR", "april.sanchez")
-                password = os.getenv("BONITA_USER_COLABORATOR_PASSWORD", "bpm")
-            self.bonita.login(usuario,password)
+            self.bonita.login(username, "bpm")
             return user
         else:
             return None

@@ -1,23 +1,55 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { api } from "../api/api";
 
 const Header: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isAuthenticated = !!localStorage.getItem("token"); 
   const isAuthenticatedLocal = !!localStorage.getItem("local_token");
   const isAuthenticatedCloud = !!localStorage.getItem("cloud_token");
+
+  const [isManager, setIsManager] = useState(false);
+  const [isCheckingRole, setIsCheckingRole] = useState(isAuthenticatedLocal);
+
+  useEffect(() => {
+    const checkUserRole = async () => {
+      if (isAuthenticatedLocal) {
+        // Aseguramos que esté cargando al iniciar la verificación
+        setIsCheckingRole(true);
+        try {
+          const user = await api.getCurrentUser();
+          if (user && user.is_manager) {
+            setIsManager(true);
+          } else {
+            setIsManager(false);
+          }
+        } catch (error) {
+          console.error("Error verificando rol de usuario:", error);
+          setIsManager(false);
+        } finally {
+          setIsCheckingRole(false);
+        }
+      } else {
+        setIsManager(false);
+        setIsCheckingRole(false);
+      }
+    };
+
+    checkUserRole();
+  }, [isAuthenticatedLocal]);
 
   const navItems = [
     { path: "/register", label: "Registrarse", icon: "" },
     { path: '/login', label: 'Login', icon: '' },
+    // Rutas para NO Managers
     { path: '/create-project', label: 'Crear Proyecto', icon: '' },
     { path: '/local-projects', label: 'Mis tareas', icon: '' },
     { path: '/cloud-projects', label: 'Mis tareas en cloud', icon: '' },
     { path: '/colaboration-requests', label: 'Pedidos colaboración', icon: '' },
     { path: '/select-requests', label: 'Elegir pedido', icon: '' },
     { path: '/show_obs_ong', label: 'Observaciones', icon: '' },
+    // Rutas Exclusivas para Managers
     { path: '/observations', label: 'Enviar observaciones', icon: '' },
     { path: '/show_obs_manager', label: 'Mis observaciones', icon: '' },
   ];
@@ -25,8 +57,10 @@ const Header: React.FC = () => {
   const visibleNavItems = navItems.filter((item) => {
     const isAuthPath = item.path === "/login" || item.path === "/register";
     const isLocalTierPath = item.path === '/local-projects' || item.path === '/create-project';
-    const isCloudTierPath = item.path === '/cloud-projects' || item.path === '/observations' || item.path === '/select-requests' || item.path === '/colaboration-requests';
+    const isCloudTierPath = item.path === '/cloud-projects' || item.path === '/observations' || item.path === '/select-requests' || item.path === '/colaboration-requests' || item.path === '/show_obs_ong' || item.path === '/show_obs_manager';
     
+    const managerPaths = ['/observations', '/show_obs_manager'];
+
     if (isAuthPath) {
         if (isAuthenticatedLocal) {
             return false;
@@ -34,8 +68,19 @@ const Header: React.FC = () => {
         return location.pathname !== item.path;
     }
 
+    if (isAuthenticatedLocal) {
+        if (isCheckingRole) return false;
+
+        const isManagerItem = managerPaths.includes(item.path);
+
+        if (isManager) {
+            if (!isManagerItem) return false;
+        } else {
+            if (isManagerItem) return false;
+        }
+    }
+
     if (isCloudTierPath) {
-        // Corrección: Pedidos colaboración es Cloud Tier
         return isAuthenticatedCloud;
     }
 
@@ -51,6 +96,7 @@ const Header: React.FC = () => {
     localStorage.removeItem("local_token");
     localStorage.removeItem("cloud_token");
     localStorage.removeItem("username");
+    setIsManager(false);
     navigate("/login");
   };
 
@@ -66,28 +112,32 @@ const Header: React.FC = () => {
       </Link>
 
       <nav className="flex items-center gap-2">
-        {visibleNavItems.map((item, index) => (
-          <React.Fragment key={item.path}>
-            <Link to={item.path}>
-              <button
-                className={`px-3 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm ${
-                  location.pathname === item.path
-                    ? "bg-white text-violet-600 shadow-md"
-                    : "bg-violet-700 bg-opacity-50 hover:bg-white hover:text-violet-600 hover:shadow-md"
-                }`}
-              >
-                <span>{item.icon}</span>
-                <span className="hidden md:inline">{item.label}</span>
-              </button>
-            </Link>
-            {isAuthenticatedLocal && isAuthenticatedCloud && item.path === '/local-projects' && (
-                <span className="text-gray-300 opacity-70 text-lg font-thin hidden sm:inline">
-                    |
-                </span>
-            )}
-            
-          </React.Fragment>
-        ))}
+        {/* ✅ Feedback visual mientras carga el rol (opcional, evita que el menú "salte") */}
+        {isCheckingRole && isAuthenticatedLocal ? (
+             <div className="px-3 py-2 text-sm font-medium opacity-80 animate-pulse">Cargando menú...</div>
+        ) : (
+            visibleNavItems.map((item) => (
+            <React.Fragment key={item.path}>
+                <Link to={item.path}>
+                <button
+                    className={`px-3 py-2 rounded-lg font-medium transition-all flex items-center gap-2 text-sm ${
+                    location.pathname === item.path
+                        ? "bg-white text-violet-600 shadow-md"
+                        : "bg-violet-700 bg-opacity-50 hover:bg-white hover:text-violet-600 hover:shadow-md"
+                    }`}
+                >
+                    <span>{item.icon}</span>
+                    <span className="hidden md:inline">{item.label}</span>
+                </button>
+                </Link>
+                {isAuthenticatedLocal && isAuthenticatedCloud && item.path === '/local-projects' && !isManager && (
+                    <span className="text-gray-300 opacity-70 text-lg font-thin hidden sm:inline">
+                        |
+                    </span>
+                )}
+            </React.Fragment>
+            ))
+        )}
 
         {isAuthenticatedLocal && (
           <button
