@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from jose import JWTError, jwt
-from fastapi import HTTPException, status, Depends
+from fastapi import HTTPException, status, Depends, Request
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.services.user_service import UserService
@@ -31,23 +31,15 @@ def verify_token(token: str, credentials_exception):
     except JWTError:
         raise credentials_exception
     
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
-    ) 
-    username = verify_token(token, credentials_exception)
-    user_service = UserService(db)
-    user = user_service.get_user_by_username(username)
-    if user is None:
-        raise credentials_exception
-    return user
-
-def get_current_manager_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
+    )
+    bonita_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
+        detail="User is not in bonita group Colaboradores",
         headers={"WWW-Authenticate": "Bearer"},
     )
     rol_exception = HTTPException(
@@ -59,6 +51,34 @@ def get_current_manager_user(token: str = Depends(oauth2_scheme), db: Session = 
     user = user_service.get_user_by_username(username)
     if user is None:
         raise credentials_exception
+    if "Colaboradores" not in request.session.get("bonita_groups"):
+        raise bonita_exception
+    if user.is_manager:
+        raise rol_exception
+    return user
+
+def get_current_manager_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    rol_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Unauthorized, access denied",
+    ) 
+    bonita_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="User is not in bonita group Encargados",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    username = verify_token(token, credentials_exception)
+    user_service = UserService(db)
+    user = user_service.get_user_by_username(username)
+    if user is None:
+        raise credentials_exception
+    if "Encargados" not in request.session.get("bonita_groups"):
+        raise bonita_exception
     if not user.is_manager:
         raise rol_exception
     return user 

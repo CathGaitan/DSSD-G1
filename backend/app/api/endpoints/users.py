@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.services.auth_service import get_current_user, get_current_manager_user
 from app.core.database import get_db
 from app.services.user_service import UserService
+from typing import List
+from fastapi import Request
 
 router = APIRouter()
 user_service = UserService(db=Depends(get_db))
@@ -71,3 +73,8 @@ def disassociate_user_from_ong(user_id: int, ong_id: int, db: Session = Depends(
     except HTTPException as e:
         raise e
     return {"message": "User disassociated from ONG successfully"}
+
+# Get current user bonita_groups
+@router.get("/bonita/groups/", response_model=List[str])
+def get_groups(request: Request, current_user: UserResponse = Depends(get_current_user)):
+    return request.session.get("bonita_groups")

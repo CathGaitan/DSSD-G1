@@ -8,10 +8,7 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Cloud API")
 
-origins = [
-    "http://localhost:5173",  #  frontend vite
-    "http://127.0.0.1:5173",  # 127.0.0.1
-]
+origins = ["*"] 
 
 app.add_middleware(
     CORSMiddleware,

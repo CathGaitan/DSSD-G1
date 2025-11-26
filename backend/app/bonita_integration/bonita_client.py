@@ -1,5 +1,6 @@
 import os
 import requests
+from fastapi import Request
 
 
 class BonitaClient:
@@ -8,7 +9,7 @@ class BonitaClient:
         self.session = requests.Session()
         self.logged_in = False
 
-    def login(self, username: str, password: str):
+    def login(self, request: Request, username: str, password: str):
         login_url = f"{self.base_url}/loginservice"
         payload = {
             "username": username,
@@ -18,12 +19,13 @@ class BonitaClient:
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
         response = self.session.post(login_url, data=payload, headers=headers)
         if response.status_code not in (200, 204):
-            raise Exception(f"Error {response.status_code}: {response.text}")
+            raise Exception(f"Error {response.status_code}: 'Usted no tiene usuario en bonita'")
         token = response.cookies.get("X-Bonita-API-Token")
         print(f"Token de Bonita recibido: {token!r}")
         if token:
             self.session.headers.update({"X-Bonita-API-Token": token})
             self.logged_in = True
+            request.session["bonita_groups"] = self.get_groups_of_user()
             return {"X-Bonita-API-Token": token}
         raise Exception("No se obtuvo token de sesión de Bonita.")
     
@@ -130,3 +132,25 @@ class BonitaClient:
             return {"error": "Variable not found"}
         response.raise_for_status()
         return response.json()
+
+    def get_groups_of_user(self):
+        #Obtener todos los grupos de un user
+
+        grupos = []
+
+        user_id = self._get_current_user_id()
+
+        #Obtengo los memberships del usuario actual
+        url = f"{self.base_url}/API/identity/membership?f=user_id={user_id}"
+        response = self.session.get(url)
+        response.raise_for_status()
+        memberships = response.json()
+
+        #Obtengo los grupos de esos memberships
+        for mem in memberships:
+            url = f"{self.base_url}/API/identity/group/{mem['group_id']}"
+            response = self.session.get(url)
+            response.raise_for_status()
+            if(response.status_code==200):
+                grupos.append(response.json()['name'])
+        return grupos
