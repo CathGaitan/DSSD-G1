@@ -1,4 +1,4 @@
-const BASE_CLOUD_URL = 'http://localhost:10000';
+const BASE_CLOUD_URL = 'https://dssd-g1.onrender.com';
 const BASE_LOCAL_URL = 'http://localhost:8000';
 
 export const api = {

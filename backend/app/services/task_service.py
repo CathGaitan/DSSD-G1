@@ -81,10 +81,10 @@ class TaskService:
 
     def _send_to_bonita(self, case_id: int, payload: dict) -> None:
         tasks = self.bonita.start_human_tasks(case_id)
-        time.sleep(1)
+        time.sleep(4)
         if not tasks:
             raise Exception(f"No hay tareas humanas disponibles para el caso {case_id}")
         next_task_id = tasks[0]["id"]
-        time.sleep(1)
+        time.sleep(4)
         self.bonita.assign_task(next_task_id)
         self.bonita.send_form_data(next_task_id, payload)

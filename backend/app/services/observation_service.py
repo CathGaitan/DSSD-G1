@@ -17,9 +17,9 @@ class ObservationService:
     def send_observation_to_bonita(self, observation: ObservationBase, current_user) -> dict:
         try:
             process_id = self.bonita.get_process_id_by_name(self.process_name)
-            time.sleep(1)
+            time.sleep(4)
             case_id = self.bonita.initiate_process(process_id).get("caseId")
-            time.sleep(1)
+            time.sleep(4)
             task_id = self.bonita.start_human_tasks(case_id)[0].get("id")
             self.bonita.assign_task(task_id)
             self.bonita.send_form_data(task_id, {
@@ -46,13 +46,15 @@ class ObservationService:
             raise
 
     def accept_observation(self, observation_id: int, current_user) -> dict:
+        print(observation_id)
+        print(self.obs_repo.get_by_id(observation_id))
         case_id = self.obs_repo.get_by_id(observation_id).case_id
         tasks = self.bonita.start_human_tasks(case_id)
-        time.sleep(1)
+        time.sleep(4)
         if not tasks:
             raise Exception(f"No hay tareas humanas disponibles para el caso {case_id}")
         next_task_id = tasks[0]["id"]
-        time.sleep(1)
+        time.sleep(4)
         self.bonita.assign_task(next_task_id)
         self.bonita.send_form_data(next_task_id, {
             "acceptObservationInput": {

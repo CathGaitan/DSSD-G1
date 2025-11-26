@@ -10,7 +10,8 @@ app = FastAPI(title="Local API")
 
 origins = [
     "http://localhost:5173",  #  frontend vite
-    "http://127.0.0.1:5173",  # 127.0.0.1
+    "http://127.0.0.1:5173",
+    "https://dssd-g1.onrender.com"  # 127.0.0.1
 ]
 
 app.add_middleware(

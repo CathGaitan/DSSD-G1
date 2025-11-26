@@ -42,20 +42,20 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  cloud:
-    build: ./cloud
-    container_name: fastapi_cloud
-    ports:
-      - "10000:10000"
-    volumes:
-      - ./cloud:/app
-    depends_on:
-      - db
-    environment:
-      - DATABASE_CLOUD_URL=${DATABASE_CLOUD_URL}
-      - USERS_PASSWORD=${USERS_PASSWORD}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+  # cloud:
+  #   build: ./cloud
+  #   container_name: fastapi_cloud
+  #   ports:
+  #     - "10000:10000"
+  #   volumes:
+  #     - ./cloud:/app
+  #   depends_on:
+  #     - db
+  #   environment:
+  #     - DATABASE_CLOUD_URL=${DATABASE_CLOUD_URL}
+  #     - USERS_PASSWORD=${USERS_PASSWORD}
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
 
 volumes:
   postgres_data:

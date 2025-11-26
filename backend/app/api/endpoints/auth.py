@@ -8,7 +8,7 @@ import requests
 
 router = APIRouter()
 
-CLOUD_LOGIN_URL = "http://cloud:10000/auth/login"  # Reemplazar con la URL real de Cloud para levantar el entorno cloud
+CLOUD_LOGIN_URL = "https://dssd-g1.onrender.com/auth/login"
 
 @router.post("/login")
 def login(

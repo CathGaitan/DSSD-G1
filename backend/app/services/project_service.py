@@ -65,7 +65,7 @@ class ProjectService:
         """Envía el proyecto y sus tareas a Bonita"""
         process_id = self.bonita.get_process_id_by_name(self.process_name)
         case_id = self.bonita.initiate_process(process_id).get("caseId")
-        time.sleep(1)
+        time.sleep(4)
         task_id = self.bonita.start_human_tasks(case_id)[0].get("id")
         self.bonita.assign_task(task_id)
         tasks_bonita = [

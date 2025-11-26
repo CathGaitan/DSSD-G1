@@ -34,7 +34,7 @@ class StatsService:
             try:
                 logger.info("Buscando process_id para '%s'...", self.process_name)
                 self.process_id = self.bonita.get_process_id_by_name(self.process_name)
-                time.sleep(2)  # Le da tiempo a Bonita para actualizar
+                time.sleep(4)  # Le da tiempo a Bonita para actualizar
                 logger.info("process_id obtenido: %s", self.process_id)
             except Exception as e:
                 logger.error("Error obteniendo process_id de Bonita: %s", e)
@@ -44,7 +44,7 @@ class StatsService:
     def get_successful_on_time_avg(self) -> float:
         # self._ensure_process_id()
         self.process_id = self.bonita.get_process_id_by_name(self.process_name)
-        time.sleep(2)  # Le da tiempo a Bonita para actualizar
+        time.sleep(4)  # Le da tiempo a Bonita para actualizar
         if not self.process_id:
             logger.warning("No process_id disponible — retornando 0.")
             return 0.0
@@ -52,7 +52,7 @@ class StatsService:
         try:
             # Obtener todos los archivedCases del proceso ANDA
             archived_cases = self.bonita.get_archived_cases(self.process_id)
-            time.sleep(1)
+            time.sleep(4)
             logger.info("Archived cases recuperados: %s", len(archived_cases))
         except Exception as e:
             logger.error("Error consultando archived_cases: %s", e)
@@ -93,7 +93,7 @@ class StatsService:
             # Leer variable project_end_date del case original
             try:
                 var = self.bonita.get_variable_from_archived_case(original_case_id, "project_end_date")
-                time.sleep(1)
+                time.sleep(4)
             except Exception as e:
                 logger.error("Error leyendo variable project_end_date del caso %s: %s",
                             original_case_id, e)
@@ -117,14 +117,14 @@ class StatsService:
     def get_percent_no_collaboration_needed(self) -> float:
         # Calcula el porcentaje de proyectos (casos) que no necesitaron colaboraciones de otras ONG
         self.process_id = self.bonita.get_process_id_by_name(self.process_name)
-        time.sleep(2)  # Le da tiempo a Bonita para actualizar
+        time.sleep(4)  # Le da tiempo a Bonita para actualizar
         if not self.process_id:
             logger.warning("No process_id disponible — retornando 0.")
             return 0.0
         try:
             # Total proyectos archivados/cerrados en estado completed
             total_projects = self.bonita.get_archived_cases(self.process_id)
-            time.sleep(1)
+            time.sleep(4)
             total_projects = len([c for c in total_projects if c.get("state") == "completed"])
             logger.info("Total de proyectos cerrados: %s", total_projects)
         except Exception as e:
