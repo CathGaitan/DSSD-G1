@@ -13,14 +13,8 @@ class OngRepository(BaseRepository):
     def get_by_name(self, name: str) -> Ong | None:
         return self.db.query(Ong).filter(Ong.name == name).one_or_none()
 
-
     def get_ongs_with_collaborations(self): 
-          """
-        Retorna una lista de tuplas (ong_name, total_colaboraciones)
-        contando solo tareas donde la ONG fue seleccionada (status='selected')
-        y NO es la dueña del proyecto.
-        """
-          return (
+        result = (
             self.db.query(
                 Ong.name.label("ong_name"),
                 func.count(TaskOngAssociation.task_id).label("collaborations")
@@ -29,8 +23,14 @@ class OngRepository(BaseRepository):
             .join(Task, Task.id == TaskOngAssociation.task_id)
             .join(Project, Project.id == Task.project_id)
             .filter(TaskOngAssociation.status == "selected")
-            .filter(Project.owner_id != Ong.id)  # evita contar colaboraciones de sus propios proyectos
+            .filter(Project.owner_id != Ong.id)
             .group_by(Ong.id)
             .all()
         )
-      
+        return [
+            {
+                "ong_name": row.ong_name, 
+                "collaborations": row.collaborations
+            }
+            for row in result
+        ]

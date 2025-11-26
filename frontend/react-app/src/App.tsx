@@ -8,10 +8,11 @@ import ShowProjectsCloud from './pages/ShowProjectsCloud';
 import ShowProjectsLocal from './pages/ShowProjectsLocal';
 import Observations from './pages/Observations';
 import SelectRequest from './pages/SelectRequest';
-import ProtectedRoute from './components/ProtectedRoute'; // <-- IMPORTADO
+import ProtectedRoute from './components/ProtectedRoute';
 import ShowCollaborationRequest from './pages/ShowCollaborationRequest';
 import ShowObservationsManager from './pages/ShowObservationsManager';
 import ShowObservationsONG from './pages/ShowObservationsONG';
+import Metrics from './pages/Metrics';
 
 function App() {
   return (
@@ -35,7 +36,7 @@ function App() {
           <Route path="/observations" element={<ProtectedRoute authTier="cloud"><Observations /></ProtectedRoute>} />
           <Route path="/show_obs_manager" element={<ProtectedRoute authTier="cloud"><ShowObservationsManager /></ProtectedRoute>} />
           <Route path="/show_obs_ong" element={<ProtectedRoute authTier="cloud"><ShowObservationsONG /></ProtectedRoute>} />
-
+          <Route path="/metrics" element={<ProtectedRoute authTier="cloud"><Metrics /></ProtectedRoute>} />
         </Routes>
       </Layout>
     </Router>

@@ -10,6 +10,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class StatsService:
 
     def __init__(self, db: Session):
@@ -66,8 +67,6 @@ class StatsService:
 
         total_cases = len(completed_cases)
         logger.info("Total de casos completados: %s", total_cases)
-        print("Total de casos completados: %s", total_cases) # hasta acá anda
-
         if total_cases == 0:
             return 0.0
 
@@ -75,7 +74,6 @@ class StatsService:
 
         for case in completed_cases:
             end_date_str = case.get("end_date")
-            print("end_date_str:", end_date_str)
             if not end_date_str:
                 continue
 
@@ -88,7 +86,6 @@ class StatsService:
 
             # Obtener sourceObjectId = ID ORIGINAL del caso en ejecución
             original_case_id = case.get("sourceObjectId")
-            print("original_case_id:", original_case_id)
             if not original_case_id:
                 logger.warning("ArchivedCase sin sourceObjectId, id=%s", case.get("id"))
                 continue
@@ -97,7 +94,6 @@ class StatsService:
             try:
                 var = self.bonita.get_variable_from_archived_case(original_case_id, "project_end_date")
                 time.sleep(1)
-                print("Variable project_end_date del caso %s: %s", original_case_id, var)
             except Exception as e:
                 logger.error("Error leyendo variable project_end_date del caso %s: %s",
                             original_case_id, e)
@@ -134,9 +130,12 @@ class StatsService:
         except Exception as e:
             logger.error("Error consultando count_closed_cases: %s", e)
             raise
-        
         if total_projects == 0:
-            return 0.0
+            return {
+                "projects_no_collab": 0, 
+                "total_projects": 0, 
+                "percent": 0.0
+            }
         try:
             projects_no_collab = len(self.project_service.project_repo.get_projects_solved_without_collaboration())
             logger.info("Proyectos sin colaboración: %s", projects_no_collab)
