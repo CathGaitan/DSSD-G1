@@ -33,3 +33,6 @@ class OngService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No existe una ONG con nombre='{name}'.")
         if ong_by_id.id != ong_by_name.id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"El id={ong_id} no corresponde a la ONG con nombre='{name}'.")
+        
+    def get_ongs_with_self_resolved_tasks(self):
+        return self.ong_repo.get_ongs_with_self_resolved_tasks()

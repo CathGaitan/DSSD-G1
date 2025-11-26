@@ -37,3 +37,6 @@ class OngService:
             )
         user_emails = [user.email for user in ong.users]
         return user_emails
+
+    def get_ongs_and_collaborations(self):
+        return self.ong_repo.get_ongs_with_collaborations()
