@@ -24,6 +24,7 @@ def get_me(current_user: UserResponse = Depends(get_current_user)):
 
 # Create a new user
 @router.post("/create", response_model=UserResponse, status_code=201)
+#def create_user(user_in: UserCreate, db: Session = Depends(get_db)):
 def create_user(user_in: UserCreate, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
     return UserService(db).create_user(user_in)
 
@@ -61,3 +62,12 @@ def disassociate_user_from_ong(user_id: int, ong_id: int, db: Session = Depends(
     except HTTPException as e:
         raise e
     return {"message": "User disassociated from ONG successfully"}
+
+
+@router.get("/{user_id}/email", response_model=dict)
+def get_email_by_user_id(user_id: int, db: Session = Depends(get_db), current_user: UserResponse = Depends(get_current_user)):
+    user_service = UserService(db)
+    user = user_service.get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"email": user.email}

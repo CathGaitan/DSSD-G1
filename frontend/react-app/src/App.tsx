@@ -10,6 +10,8 @@ import Observations from './pages/Observations';
 import SelectRequest from './pages/SelectRequest';
 import ProtectedRoute from './components/ProtectedRoute'; // <-- IMPORTADO
 import ShowCollaborationRequest from './pages/ShowCollaborationRequest';
+import ShowObservationsManager from './pages/ShowObservationsManager';
+import ShowObservationsONG from './pages/ShowObservationsONG';
 
 function App() {
   return (
@@ -29,8 +31,11 @@ function App() {
           
           <Route path="/cloud-projects" element={<ProtectedRoute authTier="cloud"><ShowProjectsCloud /></ProtectedRoute>} />
           <Route path="/colaboration-requests" element={<ProtectedRoute authTier="cloud"><ShowCollaborationRequest /></ProtectedRoute>} />
-          <Route path="/observations" element={<ProtectedRoute authTier="cloud"><Observations /></ProtectedRoute>} />
           <Route path="/select-requests" element={<ProtectedRoute authTier="cloud"><SelectRequest /></ProtectedRoute>} />
+          <Route path="/observations" element={<ProtectedRoute authTier="cloud"><Observations /></ProtectedRoute>} />
+          <Route path="/show_obs_manager" element={<ProtectedRoute authTier="cloud"><ShowObservationsManager /></ProtectedRoute>} />
+          <Route path="/show_obs_ong" element={<ProtectedRoute authTier="cloud"><ShowObservationsONG /></ProtectedRoute>} />
+
         </Routes>
       </Layout>
     </Router>

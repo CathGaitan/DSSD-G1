@@ -10,7 +10,7 @@ const ShowProjectsLocal: React.FC = () => {
       fetchProjects={fetchProjects}
       showCommitActions={false}
       showOrganizerColumn={false}
-      title="📋 Mis Tareas"
+      title="Mis Tareas"
       subtitle="Visualiza las tareas de tus proyectos"
     />
   );

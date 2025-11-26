@@ -10,6 +10,7 @@ from app.repositories.ong_repository import OngRepository
 from app.repositories.user_ong_repository import UserOngRepository
 import logging
 from app.bonita_integration.bonita_api import bonita
+import os
 
 logger = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -66,9 +67,10 @@ class UserService:
         user = self.user_repo.get_by_username(username)
         if user and pwd_context.verify(password, user.hashed_password):
             user = UserResponse.model_validate(user)
-            self.bonita.login("walter.bates", "bpm") #MODIFICAR POR USER VERDADERO
+            self.bonita.login(username, "bpm")
             return user
-        return None
+        else:
+            return None
 
     def add_user_to_ong(self, user_id: int, ong_id: int) -> None:
         user = self.user_repo.get_by_id(user_id)

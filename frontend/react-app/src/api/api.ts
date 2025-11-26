@@ -112,12 +112,12 @@ export const api = {
     const cloud_token = localStorage.getItem('cloud_token');
     const local_token = localStorage.getItem('local_token');
     const [cloud_response, local_response] = await Promise.all([
-        fetch(`${BASE_CLOUD_URL}/api/projects/projects_status/execution/`, {
+        fetch(`${BASE_CLOUD_URL}/api/projects/projects_status/execution`, {
             headers: {
                 "Authorization": `Bearer ${cloud_token}`,
             },
         }),
-        fetch(`${BASE_LOCAL_URL}/projects/projects_status/execution/`, {
+        fetch(`${BASE_LOCAL_URL}/projects/projects_status/execution`, {
             headers: {
                 "Authorization": `Bearer ${local_token}`,
             },
@@ -171,7 +171,7 @@ export const api = {
 
     if (!response.ok) throw new Error("Credenciales inválidas");
 
-    return response.json(); // devuelve el token
+    return response.json();
   },
 
   checkProjectNameExists: async (name: string): Promise<boolean> => {
@@ -247,7 +247,6 @@ export const api = {
     // POST: Seleccionar una ONG para una tarea (Backend Local -> Bonita)
     selectOngForTask: async (taskId: number, ongId: number, projectId: number) => {
         const local_token = localStorage.getItem('local_token');
-        console.log('Seleccionando ONG', { taskId, ongId, projectId });
         const response = await fetch(`${BASE_LOCAL_URL}/tasks/select_ong_for_task`, {
             method: 'POST',
             headers: {
@@ -266,4 +265,67 @@ export const api = {
         }
         return response.json();
     },
+
+    // POST: Enviar una observación para un proyecto (Backend Local -> Bonita)
+    sendObservation: async (observationText: string, projectName: string, ongId: number) => {
+        const local_token = localStorage.getItem('local_token');
+        const response = await fetch(`${BASE_LOCAL_URL}/observations/send_observation`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                "Authorization": `Bearer ${local_token}`,
+
+            },
+            body: JSON.stringify({
+                content: observationText,
+                project_name: projectName,
+                ong_id: ongId
+            }),
+        });
+        if (!response.ok) throw new Error('Error al guardar el compromiso');
+        return response.json();
+  },
+
+    //GET: Obtener observaciones de mis ONGs
+    getMyObservations: async () => {
+      const cloud_token = localStorage.getItem('cloud_token');
+      const response = await fetch(`${BASE_CLOUD_URL}/api/observations/my_observations_ong`, {
+          headers: {
+              "Authorization": `Bearer ${cloud_token}`,
+          },
+      });
+      if (!response.ok) throw new Error('Error al obtener proyectos con solicitudes');
+      return response.json();
+    },
+
+    //POST: Aceptar una observación (Backend Local -> Bonita)
+    acceptObservation: async (observationId: number) => {
+      const local_token = localStorage.getItem('local_token');
+      const response = await fetch(`${BASE_LOCAL_URL}/observations/accept_observation`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json',
+              "Authorization": `Bearer ${local_token}`,
+          },
+          body: JSON.stringify({
+              observation_id: observationId,
+          }),
+      });
+      if (!response.ok) throw new Error('Error al aceptar la observación');
+      return response.json();
+    },
+
+    //GET: Obtener observaciones que realize como manager
+    getMyObservationsManager: async () => {
+      const cloud_token = localStorage.getItem('cloud_token');
+      const response = await fetch(`${BASE_CLOUD_URL}/api/observations/my_observations_manager`, {
+          headers: {
+              "Authorization": `Bearer ${cloud_token}`,
+          },
+      });
+      if (!response.ok) throw new Error('Error al obtener proyectos con solicitudes');
+      return response.json();
+    },
+
+
 };

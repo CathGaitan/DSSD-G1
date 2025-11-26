@@ -3,6 +3,7 @@ import { api } from '../api/api';
 import { type ShowProject } from '../types/project.types';
 import { type Task } from '../types/task.types';
 import { type Ong } from '../types/ong.types';
+import { Alert, useAlert } from '../components/ui/Alert'; // <--- 1. Importamos el componente y el hook
 
 // --- Constantes de Paginación ---
 const ITEMS_PER_PAGE = 5; // Proyectos por página
@@ -26,6 +27,9 @@ const Observations: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<ShowProject | null>(null);
   const [observationText, setObservationText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // --- Hook de Alertas ---
+  const { alert, showAlert, closeAlert } = useAlert();
 
   // --- Carga de Datos ---
   useEffect(() => {
@@ -53,7 +57,7 @@ const Observations: React.FC = () => {
       }
     };
     fetchProjectsAndOngs();
-  }, []); // El array vacío asegura que se ejecute solo una vez
+  }, []); 
 
   // --- Manejadores de Eventos ---
   const handleProjectClick = (projectId: number) => {
@@ -75,21 +79,36 @@ const Observations: React.FC = () => {
 
   const handleSubmitObservation = async () => {
     if (!selectedProject || !observationText.trim()) return;
+    
+    // 3. Reemplazamos el alert de validación
+    if (observationText.trim().length < 10) {
+        showAlert('warning', "La observación debe tener al menos 10 caracteres.");
+        return;
+    }
+    
     setIsSubmitting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulación de API
-      console.log("Observación enviada:", { projectId: selectedProject.id, observationText });
-      alert("Observación enviada (simulado)");
+      const projectName = selectedProject.name;
+      const ongId = selectedProject.owner_id; 
+
+      // Enviamos texto, nombre del proyecto y el ID de la ONG
+      await api.sendObservation(observationText, projectName.trim(), ongId);
+
+      console.log("Observación enviada:", { projectName: projectName, observationText, ongId });
+      showAlert('success', "Observación enviada con éxito!");
+      
       handleCloseModal();
-    } catch (err) {
-      alert("Error al enviar la observación.");
+      
+    } catch (err: any) {
+        console.error("Error al enviar la observación:", err);
+        showAlert('error', err.message || "Error al enviar la observación. Intenta de nuevo.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   // --- Lógica de Renderizado (Helpers) ---
-  const getStatusBadge = (status: string) => { /* ... (sin cambios) ... */ 
+  const getStatusBadge = (status: string) => {
     const styles: { [key: string]: string } = { active: "bg-blue-100 text-blue-800", execution: "bg-yellow-100 text-yellow-800", finished: "bg-green-100 text-green-800", default: "bg-gray-100 text-gray-800" };
     const labels: { [key: string]: string } = { active: "Activo", execution: "En Ejecución", finished: "Finalizado", default: status.charAt(0).toUpperCase() + status.slice(1) };
     const style = styles[status] || styles.default;
@@ -97,7 +116,7 @@ const Observations: React.FC = () => {
     return <span className={`px-3 py-1 rounded-full text-xs font-semibold ${style}`}>{label}</span>;
   };
 
-  const getTaskStatusBadge = (status: string) => { /* ... (sin cambios) ... */ 
+  const getTaskStatusBadge = (status: string) => {
     const styles: { [key: string]: string } = { pending: "bg-yellow-100 text-yellow-800", resolved: "bg-green-100 text-green-800", default: "bg-gray-100 text-gray-800" };
     const labels: { [key: string]: string } = { pending: "Pendiente", resolved: "Resuelta", default: status.charAt(0).toUpperCase() + status.slice(1) };
     const style = styles[status] || styles.default;
@@ -114,20 +133,29 @@ const Observations: React.FC = () => {
 
   const goToPage = (page: number) => {
     setCurrentPage(page);
-    setExpandedProjectId(null); // Colapsar filas al cambiar de página
+    setExpandedProjectId(null);
   };
 
   // --- Renderizado del Componente ---
 
-  if (loading) { /* ... (sin cambios) ... */ 
+  if (loading) { 
     return <div className="flex justify-center items-center min-h-[400px]"><div className="text-center"><div className="text-6xl mb-4">⏳</div><div className="text-xl text-violet-600 font-semibold">Cargando mis proyectos...</div></div></div>;
   }
-  if (error) { /* ... (sin cambios) ... */ 
+  if (error) { 
     return <div className="max-w-2xl mx-auto mt-8"><div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded"><h3 className="font-bold">Error al cargar los proyectos</h3><p>{error}</p></div></div>;
   }
 
   return (
     <div className="w-full">
+      {/* 6. Renderizamos el componente Alert si está activo */}
+      {alert.show && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={closeAlert}
+        />
+      )}
+
       {/* Header de la página */}
       <div className="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -144,7 +172,6 @@ const Observations: React.FC = () => {
           <table className="w-full">
             {/* Cabecera de la tabla */}
             <thead className="bg-gradient-to-r from-violet-600 to-purple-600 text-white">
-              {}
               <tr>
                 <th className="px-6 py-4 text-left text-sm font-semibold">Proyecto</th>
                 <th className="px-6 py-4 text-left text-sm font-semibold">ONG Dueña</th>
@@ -154,9 +181,7 @@ const Observations: React.FC = () => {
                 <th className="px-6 py-4 text-left text-sm font-semibold">Acciones</th>
               </tr>
             </thead>
-            {/* Cuerpo de la tabla */}
             <tbody className="divide-y divide-gray-200">
-              {/* 🔽 4. colSpan actualizado a 6 🔽 */}
               {projects.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
@@ -177,7 +202,6 @@ const Observations: React.FC = () => {
                       className="hover:bg-gray-50 transition-colors cursor-pointer"
                       onClick={() => handleProjectClick(project.id)}
                     >
-                      {}
                       <td className="px-6 py-4"><div className="font-semibold text-gray-900">{project.name}</div></td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-700">
@@ -205,7 +229,6 @@ const Observations: React.FC = () => {
                     {/* === FILA DESPLEGABLE (TAREAS) === */}
                     {expandedProjectId === project.id && (
                       <tr className="bg-violet-50">
-                        {/* 👈 4. colSpan actualizado a 6 */}
                         <td colSpan={6} className="p-0">
                           <div className="p-4 overflow-hidden transition-all duration-300 ease-in-out">
                             <h4 className="text-base font-semibold text-violet-800 mb-3 ml-2">Tareas del Proyecto</h4>
@@ -298,7 +321,7 @@ const Observations: React.FC = () => {
         )}
       </div>
 
-      {}
+      {/* Modal de Observación */}
       {showObservationModal && selectedProject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-fadeIn">
@@ -327,7 +350,7 @@ const Observations: React.FC = () => {
             <div className="flex gap-3">
               <button
                 onClick={handleSubmitObservation}
-                disabled={!observationText.trim() || isSubmitting}
+                disabled={!observationText.trim() || isSubmitting || observationText.trim().length < 10}
                 className="flex-1 px-6 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Enviando...' : 'Guardar Observación'}

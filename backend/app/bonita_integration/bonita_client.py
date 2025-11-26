@@ -20,6 +20,7 @@ class BonitaClient:
         if response.status_code not in (200, 204):
             raise Exception(f"Error {response.status_code}: {response.text}")
         token = response.cookies.get("X-Bonita-API-Token")
+        print(f"Token de Bonita recibido: {token!r}")
         if token:
             self.session.headers.update({"X-Bonita-API-Token": token})
             self.logged_in = True
