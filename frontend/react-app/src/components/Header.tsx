@@ -52,14 +52,15 @@ const Header: React.FC = () => {
     // Rutas Exclusivas para Managers
     { path: '/observations', label: 'Enviar observaciones', icon: '' },
     { path: '/show_obs_manager', label: 'Mis observaciones', icon: '' },
+    { path: '/metrics', label: 'Métricas', icon: '' },
   ];
 
   const visibleNavItems = navItems.filter((item) => {
     const isAuthPath = item.path === "/login" || item.path === "/register";
     const isLocalTierPath = item.path === '/local-projects' || item.path === '/create-project';
-    const isCloudTierPath = item.path === '/cloud-projects' || item.path === '/observations' || item.path === '/select-requests' || item.path === '/colaboration-requests' || item.path === '/show_obs_ong' || item.path === '/show_obs_manager';
+    const isCloudTierPath = item.path === '/cloud-projects' || item.path === '/observations' || item.path === '/select-requests' || item.path === '/colaboration-requests' || item.path === '/show_obs_ong' || item.path === '/show_obs_manager' || item.path === '/metrics';
     
-    const managerPaths = ['/observations', '/show_obs_manager'];
+    const managerPaths = ['/observations', '/show_obs_manager', "/metrics"];
 
     if (isAuthPath) {
         if (isAuthenticatedLocal) {

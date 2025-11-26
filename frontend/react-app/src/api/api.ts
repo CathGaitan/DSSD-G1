@@ -327,5 +327,42 @@ export const api = {
       return response.json();
     },
 
+    // METRICAS
+    getSuccessfulOnTimeAvg: async () => {
+        const token = localStorage.getItem('local_token');
+        const response = await fetch(`${BASE_LOCAL_URL}/stats/successful-on-time-avg`, {
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Error al obtener métrica de éxito');
+        return response.json(); // Retorna un float
+    },
+
+    getPercentNoCollaboration: async () => {
+        const token = localStorage.getItem('local_token');
+        const response = await fetch(`${BASE_LOCAL_URL}/stats/percent-no-collaboration-needed`, {
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Error al obtener métrica de colaboración');
+        return response.json(); // Retorna { projects_no_collab, total_projects, percent }
+    },
+
+    getOngsAndTasks: async () => {
+        const token = localStorage.getItem('local_token');
+        const response = await fetch(`${BASE_LOCAL_URL}/stats/ongs-and-tasks`, {
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Error al obtener tareas por ONG (Local)');
+        return response.json(); // Retorna lista de { ong_name, resolved_tasks }
+    },
+
+    getOngsAndCollaborations: async () => {
+        const token = localStorage.getItem('cloud_token');
+        const response = await fetch(`${BASE_CLOUD_URL}/api/stats/ongs-and-collaborations`, {
+            headers: { "Authorization": `Bearer ${token}` },
+        });
+        if (!response.ok) throw new Error('Error al obtener colaboraciones por ONG (Cloud)');
+        return response.json(); // Retorna lista de { ong_name, collaborations }
+    },
+
 
 };
