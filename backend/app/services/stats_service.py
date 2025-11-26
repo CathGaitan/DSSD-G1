@@ -151,16 +151,3 @@ class StatsService:
         # Retorna una lista de elementos con cada ong y la cantidad de tareas resueltas 
         return self.ong_service.get_ongs_with_self_resolved_tasks()
 
-
-    def get_total_stats(self, current_user) -> StatsResponse:
-        # Unificar todos los indicadores y devolverlos en un solo objeto stats schema
-        try: 
-            top_3_ongs = self.get_top_3_ongs()
-        except NotImplementedError:
-            top_3_ongs = []
-            
-        return StatsResponse(
-            successful_on_time_avg=self.get_successful_on_time_avg(),
-            percent_no_collaboration_needed=self.get_percent_no_collaboration_needed(),
-            top_3_ongs=top_3_ongs
-        )
