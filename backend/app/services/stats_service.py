@@ -1,5 +1,6 @@
 from app.bonita_integration.bonita_api import bonita
 from app.services.project_service import ProjectService
+from app.services.ong_service import OngService
 from sqlalchemy.orm import Session
 # from app.services.cloud_client import cloud_client
 from datetime import datetime
@@ -16,6 +17,7 @@ class StatsService:
         # cloud client has to get data from api and may be necessary to create new endpoints
         # self.cloud_client = cloud_client
         self.project_service = ProjectService(db)
+        self.ong_service = OngService(db)
         self.process_name = "Proceso de gestion de proyecto"
         self.process_id = None
 
@@ -145,9 +147,10 @@ class StatsService:
         # result es un dict con projects_no_collab y total_projects
         return {"projects_no_collab": projects_no_collab, "total_projects": total_projects, "percent": (projects_no_collab / total_projects) * 100}
 
-    def get_top_3_ongs(self):
-        # Lógica para obtener las 3 ONG con mejor desempeño
-        raise NotImplementedError("get_top_3_ongs will be implemented later") 
+    def get_ongs_and_tasks_resolved(self):
+        # Retorna una lista de elementos con cada ong y la cantidad de tareas resueltas 
+        return self.ong_service.get_ongs_with_self_resolved_tasks()
+
 
     def get_total_stats(self, current_user) -> StatsResponse:
         # Unificar todos los indicadores y devolverlos en un solo objeto stats schema

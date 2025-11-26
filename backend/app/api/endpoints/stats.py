@@ -44,14 +44,14 @@ def get_percent_no_collaboration_needed(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Indicador de Top 3 ONGs más colaborativas
-@router.get("/top-3-ongs", response_model=list[StatsResponse])
-def get_top_3_ongs(
+# Indicador de ONGs y tareas resueltas por la misma ONG responsable
+@router.get("/ongs-and-tasks", response_model=list)
+def get_ongs_and_tasks(
     db: Session = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user)
 ):
     try:
         service = StatsService(db)
-        return service.get_top_3_ongs()
+        return service.get_ongs_and_tasks_resolved()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
