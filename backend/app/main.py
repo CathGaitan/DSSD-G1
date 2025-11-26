@@ -3,6 +3,7 @@ from app.core.database import Base, engine
 from app.api.router import api_router
 from fastapi.middleware.cors import CORSMiddleware
 from app.models import *
+from starlette.middleware.sessions import SessionMiddleware
 
 Base.metadata.create_all(bind=engine)
 
@@ -22,3 +23,5 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+
+app.add_middleware(SessionMiddleware, secret_key="ALGO_SUPER_SECRETO")

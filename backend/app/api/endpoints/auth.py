@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Form, Request
 from sqlalchemy.orm import Session
 from app.services.user_service import UserService
 from app.services.auth_service import create_access_token
@@ -12,13 +12,14 @@ CLOUD_LOGIN_URL = "http://cloud:10000/auth/login"  # Reemplazar con la URL real 
 
 @router.post("/login")
 def login(
+    request: Request,
     username: str = Form(...),
     password: str = Form(...),
     cloud: bool = Form(False),
     db: Session = Depends(get_db)
 ):
     user_service = UserService(db)
-    user = user_service.authenticate_user(username, password)
+    user = user_service.authenticate_user(request, username, password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

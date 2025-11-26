@@ -13,6 +13,7 @@ export const api = {
         headers: {
             "Authorization": `Bearer ${token}`,
         },
+        credentials: "include",
     });
     
     if (!response.ok) {
@@ -36,6 +37,7 @@ export const api = {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`, 
         },
+        credentials: "include",
         body: JSON.stringify(payload),
     });
     
@@ -56,6 +58,7 @@ export const api = {
         headers: {
             "Authorization": `Bearer ${token}`,
         },
+        credentials: "include",
     });
     if (!response.ok) {
         console.error('Error al cargar ONGs del usuario. Código:', response.status);
@@ -72,6 +75,7 @@ export const api = {
         headers: {
             "Authorization": `Bearer ${token}`,
         },
+        credentials: "include",
     });
     const res = await response.json();
     if (!response.ok) throw new Error('Error al cargar proyectos');
@@ -84,6 +88,7 @@ export const api = {
         headers: {
             "Authorization": `Bearer ${token}`,
         },
+        credentials: "include",
     });
     const res = await response.json();
     if (!response.ok) throw new Error('Error al cargar proyectos');
@@ -91,7 +96,7 @@ export const api = {
   },
 
   getOngs: async () => {
-    const response = await fetch(`${BASE_CLOUD_URL}/api/ongs/`);
+    const response = await fetch(`${BASE_CLOUD_URL}/api/ongs/`,{credentials: "include"});
     if (!response.ok) throw new Error('Error al cargar ONGs');
     return response.json();
   },
@@ -102,6 +107,7 @@ export const api = {
           headers: {
               "Authorization": `Bearer ${token}`,
           },
+          credentials: "include",
       });
       if (!response.ok) throw new Error('Error al cargar proyectos');
       return response.json();
@@ -116,11 +122,13 @@ export const api = {
             headers: {
                 "Authorization": `Bearer ${cloud_token}`,
             },
+            credentials: "include",
         }),
         fetch(`${BASE_LOCAL_URL}/projects/projects_status/execution`, {
             headers: {
                 "Authorization": `Bearer ${local_token}`,
             },
+            credentials: "include",
         })
     ]);
     if (!cloud_response.ok || !local_response.ok) {
@@ -143,6 +151,7 @@ export const api = {
         "Authorization": `Bearer ${local_token}`,
 
       },
+      credentials: "include",
       body: JSON.stringify({
         project_id: projectId,
         task_id: taskId,
@@ -166,6 +175,7 @@ export const api = {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
+      credentials: "include",
       body: formData.toString(),
     });
 
@@ -184,6 +194,7 @@ export const api = {
             headers: {
                 "Authorization": `Bearer ${token}`,
             },
+            credentials: "include",
         });
 
         if (response.status === 404) {
@@ -212,6 +223,7 @@ export const api = {
           headers: {
               "Authorization": `Bearer ${token}`,
           },
+          credentials: "include",
       });
 
       if (!response.ok) {
@@ -228,6 +240,7 @@ export const api = {
             headers: {
                 "Authorization": `Bearer ${cloud_token}`,
             },
+            credentials: "include",
         });
         if (!response.ok) throw new Error('Error al obtener compromisos');
         return response.json();
@@ -239,6 +252,7 @@ export const api = {
           headers: {
               "Authorization": `Bearer ${cloud_token}`,
           },
+          credentials: "include",
       });
       if (!response.ok) throw new Error('Error al obtener proyectos con solicitudes');
       return response.json();
@@ -253,6 +267,7 @@ export const api = {
                 'Content-Type': 'application/json',
                 "Authorization": `Bearer ${local_token}`,
             },
+            credentials: "include",
             body: JSON.stringify({
                 project_id: projectId,
                 task_id: taskId,
@@ -276,6 +291,7 @@ export const api = {
                 "Authorization": `Bearer ${local_token}`,
 
             },
+            credentials: "include",
             body: JSON.stringify({
                 content: observationText,
                 project_name: projectName,
@@ -293,6 +309,7 @@ export const api = {
           headers: {
               "Authorization": `Bearer ${cloud_token}`,
           },
+          credentials: "include",
       });
       if (!response.ok) throw new Error('Error al obtener proyectos con solicitudes');
       return response.json();
@@ -307,6 +324,7 @@ export const api = {
               'Content-Type': 'application/json',
               "Authorization": `Bearer ${local_token}`,
           },
+          credentials: "include",
           body: JSON.stringify({
               observation_id: observationId,
           }),
@@ -322,6 +340,7 @@ export const api = {
           headers: {
               "Authorization": `Bearer ${cloud_token}`,
           },
+          credentials: "include",
       });
       if (!response.ok) throw new Error('Error al obtener proyectos con solicitudes');
       return response.json();
@@ -331,7 +350,7 @@ export const api = {
     getSuccessfulOnTimeAvg: async () => {
         const token = localStorage.getItem('local_token');
         const response = await fetch(`${BASE_LOCAL_URL}/stats/successful-on-time-avg`, {
-            headers: { "Authorization": `Bearer ${token}` },
+            headers: { "Authorization": `Bearer ${token}` }, credentials: "include",
         });
         if (!response.ok) throw new Error('Error al obtener métrica de éxito');
         return response.json(); // Retorna un float
@@ -340,7 +359,7 @@ export const api = {
     getPercentNoCollaboration: async () => {
         const token = localStorage.getItem('local_token');
         const response = await fetch(`${BASE_LOCAL_URL}/stats/percent-no-collaboration-needed`, {
-            headers: { "Authorization": `Bearer ${token}` },
+            headers: { "Authorization": `Bearer ${token}` },credentials: "include",
         });
         if (!response.ok) throw new Error('Error al obtener métrica de colaboración');
         return response.json(); // Retorna { projects_no_collab, total_projects, percent }
@@ -350,6 +369,7 @@ export const api = {
         const token = localStorage.getItem('local_token');
         const response = await fetch(`${BASE_LOCAL_URL}/stats/ongs-and-tasks`, {
             headers: { "Authorization": `Bearer ${token}` },
+            credentials: "include",
         });
         if (!response.ok) throw new Error('Error al obtener tareas por ONG (Local)');
         return response.json(); // Retorna lista de { ong_name, resolved_tasks }
@@ -359,6 +379,7 @@ export const api = {
         const token = localStorage.getItem('cloud_token');
         const response = await fetch(`${BASE_CLOUD_URL}/api/stats/ongs-and-collaborations`, {
             headers: { "Authorization": `Bearer ${token}` },
+            credentials: "include",
         });
         if (!response.ok) throw new Error('Error al obtener colaboraciones por ONG (Cloud)');
         return response.json(); // Retorna lista de { ong_name, collaborations }

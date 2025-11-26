@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.schemas.user_schema import UserCreate, UserResponse
 from passlib.context import CryptContext
 from typing import Optional
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Request
 from app.schemas.ong_schema import OngResponse
 from sqlalchemy.exc import IntegrityError
 from app.repositories.ong_repository import OngRepository
@@ -63,11 +63,11 @@ class UserService:
             else:
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error al crear el usuario.")
 
-    def authenticate_user(self, username: str, password: str) -> Optional[UserResponse]:
+    def authenticate_user(self, request: Request, username: str, password: str) -> Optional[UserResponse]:
         user = self.user_repo.get_by_username(username)
         if user and pwd_context.verify(password, user.hashed_password):
             user = UserResponse.model_validate(user)
-            self.bonita.login(username, "bpm")
+            self.bonita.login(request, username, "bpm")
             return user
         else:
             return None
