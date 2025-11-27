@@ -30,8 +30,28 @@ def verify_token(token: str, credentials_exception):
         return username
     except JWTError:
         raise credentials_exception
-    
+
 def get_current_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    bonita_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="User is not in bonita group Colaboradores",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    username = verify_token(token, credentials_exception)
+    user_service = UserService(db)
+    user = user_service.get_user_by_username(username)
+    if user is None:
+        raise credentials_exception
+    if "Colaboradores" not in request.session.get("bonita_groups") and "Encargados" not in request.session.get("bonita_groups"):
+        raise bonita_exception
+    return user
+
+def get_current_colaborator_user(request: Request, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
