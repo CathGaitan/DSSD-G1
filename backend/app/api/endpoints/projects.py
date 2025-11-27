@@ -4,7 +4,7 @@ from app.core.database import get_db
 from app.schemas.project_schema import ProjectCreate, ProjectResponse
 from app.services.project_service import ProjectService
 from app.schemas.user_schema import UserResponse
-from app.services.auth_service import get_current_user
+from app.services.auth_service import get_current_user, get_current_colaborator_user
 
 router = APIRouter()
 
